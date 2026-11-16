@@ -8,6 +8,7 @@ title: "Attempts"
 # Attempts
 
 - [Building SwiftTerm with xcodebuild without trusting its plug-in](DVDV-1-building-swiftterm-with-xcodebuild-without-trusting-its-plug.md): Phase 2 stopped because SwiftTerm's build plug-in fails Xcode validation until a person clicks Trust & Enable once per Mac and version.
+- [Default NSHostingController sizing for the menubar popover](DVDV-2-default-nshostingcontroller-sizing-for-the-menubar-popover.md): Letting NSHostingController keep its default sizingOptions inside the menubar NSPopover was dropped because the popover opened about 217 pt below the icon.
 - [Factory Test check appending a test file path to xcodebuild](DVDV-1-factory-test-check-appending-a-test-file-path-to-xcodebuild.md): Six fix rounds on slice 1 failed because Factory passed a test file path as a bare xcodebuild argument, which xcodebuild rejects.
 - [Parsing the dev:list text table](DVDV-1-parsing-the-devlist-text-table.md): Reading the plain dev:list table was ruled out because it is cut to terminal width and rewritten under AI-agent environments.
 - [Signalling only the leader's process group on Stop](DVDV-1-signalling-only-the-leaders-process-group-on-stop.md): Stopping a Process by signalling only its leader's group was dropped because interactive zsh moves jobs into other groups and ignores SIGTERM.

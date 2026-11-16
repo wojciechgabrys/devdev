@@ -8,3 +8,4 @@ title: "Features"
 # Features
 
 - [Build devdev macOS app from spec](DVDV-1-build-devdev-macos-app-from-spec.md): devdev, a native macOS app that starts, stops and watches a web project's dev servers from a main window, a menubar panel and an MCP server, with a background Helper that owns every Process.
+- [Fix menubar menu rendering too low](DVDV-2-fix-menubar-menu-rendering-too-low.md): Fixed the menubar panel opening about 217 points below the Helper's menubar icon, so it now hangs right under the icon.

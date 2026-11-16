@@ -1,5 +1,7 @@
 # devdev
 
+![The devdev main window, showing the output of a running vite Command](docs/images/main-window.png)
+
 A native macOS app that starts, stops and watches the dev servers a web project needs, such as `npm run dev` or `php artisan queue:listen`.
 
 You define **Projects**, give each a list of **Commands**, and control them from the main window, a menubar panel, or an AI agent over MCP.

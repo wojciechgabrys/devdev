@@ -32,6 +32,7 @@ public actor HelperEngine {
     private let environment: [String: String]
     private let now: @Sendable () -> Date
     private let loginItem: (any LoginItem)?
+    private let poster: (any NotificationPoster)?
     private var runtimes: [UUID: Runtime] = [:]
     private var subscribers: [UUID: Subscriber] = [:]
     private var runCounter = 0
@@ -50,9 +51,11 @@ public actor HelperEngine {
         helperVersion: String = DevDevCore.version,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         now: @escaping @Sendable () -> Date = { Date() },
-        loginItem: (any LoginItem)? = nil
+        loginItem: (any LoginItem)? = nil,
+        notifications poster: (any NotificationPoster)? = nil
     ) {
         self.loginItem = loginItem
+        self.poster = poster
         self.configuration = configuration
         self.store = store
         self.shell = shell
@@ -113,14 +116,20 @@ public actor HelperEngine {
     /// Starts the Command. Starting a Running Command is a no-op that returns the current status.
     @discardableResult
     public func start(_ commandID: UUID, origin: Origin) throws -> CommandSnapshot {
-        try launch(commandID, origin: origin, cause: .started, action: nil)
+        let wasRunning = isRunning(commandID)
+        let snapshot = try launch(commandID, origin: origin, cause: .started, action: nil)
+        if !wasRunning { notifyChange(.started, [commandID], origin: origin, action: nil) }
+        return snapshot
     }
 
     /// Stops the Command: SIGTERM to the tree, then SIGKILL. A Crashed or Finished Command becomes Stopped.
     @discardableResult
     public func stop(_ commandID: UUID, origin: Origin) async throws -> CommandSnapshot {
         _ = try find(commandID)
+        // Stop on a Crashed or Finished Command only clears it: no notification.
+        let wasRunning = isRunning(commandID)
         await halt(commandID, origin: origin, cause: .stopped, action: nil)
+        if wasRunning { notifyChange(.stopped, [commandID], origin: origin, action: nil) }
         return try commandSnapshot(commandID)
     }
 
@@ -128,14 +137,16 @@ public actor HelperEngine {
     @discardableResult
     public func restart(_ commandID: UUID, origin: Origin) async throws -> CommandSnapshot {
         _ = try find(commandID)
-        guard runtimes[commandID]?.process != nil else {
-            return try launch(commandID, origin: origin, cause: .started, action: nil)
+        guard isRunning(commandID) else {
+            return try start(commandID, origin: origin)
         }
         runtimes[commandID]?.startAfterStop = true
         await halt(commandID, origin: origin, cause: .stoppedForRestart, action: nil)
         if runtimes[commandID]?.startAfterStop == true {
             runtimes[commandID]?.startAfterStop = false
-            return try launch(commandID, origin: origin, cause: .restarted, action: nil)
+            let snapshot = try launch(commandID, origin: origin, cause: .restarted, action: nil)
+            notifyChange(.restarted, [commandID], origin: origin, action: nil)
+            return snapshot
         }
         return try commandSnapshot(commandID)
     }
@@ -154,10 +165,13 @@ public actor HelperEngine {
     @discardableResult
     public func startAll(_ projectID: UUID, origin: Origin) throws -> ProjectSnapshot {
         let project = try findProject(projectID)
+        var launched: [UUID] = []
         for command in project.commands
         where command.settings.includedInStartAll && runtimes[command.id]?.process == nil {
             try launch(command.id, origin: origin, cause: .started, action: .startAll)
+            launched.append(command.id)
         }
+        notifyChange(.started, launched, origin: origin, action: .startAll)
         return projectSnapshot(try findProject(projectID))
     }
 
@@ -165,7 +179,9 @@ public actor HelperEngine {
     @discardableResult
     public func stopAll(_ projectID: UUID, origin: Origin) async throws -> ProjectSnapshot {
         let project = try findProject(projectID)
+        let running = project.commands.map(\.id).filter(isRunning)
         await haltAll(project.commands.map(\.id), origin: origin, cause: .stopped, action: .stopAll)
+        notifyChange(.stopped, running, origin: origin, action: .stopAll)
         return projectSnapshot(try findProject(projectID))
     }
 
@@ -178,10 +194,13 @@ public actor HelperEngine {
             runtimes[id]?.startAfterStop = true
         }
         await haltAll(running, origin: origin, cause: .stoppedForRestart, action: .restartAll)
+        var restarted: [UUID] = []
         for id in running where runtimes[id]?.startAfterStop == true {
             runtimes[id]?.startAfterStop = false
             _ = try? launch(id, origin: origin, cause: .restarted, action: .restartAll)
+            restarted.append(id)
         }
+        notifyChange(.restarted, restarted, origin: origin, action: .restartAll)
         return projectSnapshot(try findProject(projectID))
     }
 
@@ -411,6 +430,7 @@ public actor HelperEngine {
             runtimes[commandID] = runtime
             write(banner: OutputBanner.couldNotStart("\(error)"), to: commandID)
             emitStatus(commandID, cause: .crashed, origin: origin, action: action)
+            notify(commandID) { .crashed($0, exit: nil, autoRestarting: false) }
         }
         return try commandSnapshot(commandID)
     }
@@ -436,6 +456,11 @@ public actor HelperEngine {
             } else {
                 emitStatus(
                     commandID, cause: runtime.status == .finished ? .finished : .crashed, origin: nil, action: nil)
+                if runtime.status == .finished {
+                    notify(commandID) { .finished($0) }
+                } else {
+                    notify(commandID) { .crashed($0, exit: exit, autoRestarting: false) }
+                }
             }
             waiters.forEach { $0.resume() }
         }
@@ -498,6 +523,48 @@ public actor HelperEngine {
     private func write(banner text: String, to commandID: UUID) {
         let midLine = runtimes[commandID]?.buffer.endsMidLine ?? false
         append(OutputBanner.line(text, afterPartialLine: midLine), to: commandID)
+    }
+
+    // MARK: - Notifications
+
+    private enum Change {
+        case started, restarted, stopped
+    }
+
+    private func isRunning(_ commandID: UUID) -> Bool {
+        runtimes[commandID]?.process != nil
+    }
+
+    /// One notification for the Commands the change reached. Only those that ended up in the wanted
+    /// status count: a start that could not launch already sent its crash.
+    private func notifyChange(_ change: Change, _ ids: [UUID], origin: Origin, action: ProjectAction?) {
+        let wanted: CommandStatus = change == .stopped ? .stopped : .running
+        let reached = ids.filter { runtimes[$0]?.status == wanted }
+        guard let first = reached.first, let (project, _) = try? find(first) else { return }
+        let targets = reached.compactMap { id in
+            (try? find(id)).map { NotificationTrigger.Target(id: id, name: $0.command.settings.name) }
+        }
+        let trigger: NotificationTrigger =
+            switch change {
+            case .started: .started(targets, origin: origin, action: action)
+            case .restarted: .restarted(targets, origin: origin, action: action)
+            case .stopped: .stopped(targets, origin: origin, action: action)
+            }
+        post(trigger, in: project)
+    }
+
+    private func notify(_ commandID: UUID, _ trigger: (NotificationTrigger.Target) -> NotificationTrigger) {
+        guard let (project, command) = try? find(commandID) else { return }
+        post(trigger(NotificationTrigger.Target(id: commandID, name: command.settings.name)), in: project)
+    }
+
+    private func post(_ trigger: NotificationTrigger, in project: Project) {
+        guard let poster,
+            let notification = NotificationRule.notification(
+                for: trigger, in: NotificationRule.Subject(projectID: project.id, projectName: project.name),
+                settings: configuration.settings.notifications)
+        else { return }
+        poster.post(notification)
     }
 
     // MARK: - Lookups and snapshots

@@ -2,7 +2,7 @@ import DevDevCore
 import SwiftUI
 
 /// The Settings window. The Helper stores every setting; this only shows and forwards them.
-/// Later phases add notifications and MCP.
+/// A later phase adds MCP.
 struct SettingsView: View {
     let model: WindowModel
 
@@ -27,6 +27,18 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                Section("Notifications") {
+                    ForEach(NotificationKind.allCases, id: \.self) { kind in
+                        Toggle(
+                            kind.settingsLabel,
+                            isOn: Binding(
+                                get: { settings.notifications[kind] },
+                                set: { on in Task { await model.setNotification(kind, on: on) } }))
+                    }
+                    Text("A click in devdev never sends Started, Restarted or Stopped. Crashed and Finished always do.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 Text("Settings show once devdev is connected to the Helper.")
                     .foregroundStyle(.secondary)
@@ -35,5 +47,16 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+extension NotificationKind {
+    fileprivate var settingsLabel: String {
+        switch self {
+        case .crashed: "Crashed"
+        case .started: "Started"
+        case .restarted: "Restarted"
+        case .stoppedOrFinished: "Stopped or Finished"
+        }
     }
 }

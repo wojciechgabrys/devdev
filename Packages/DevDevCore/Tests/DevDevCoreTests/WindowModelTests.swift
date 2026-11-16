@@ -361,6 +361,20 @@ final class HelperStandIn: @unchecked Sendable {
         }
     }
 
+    @Test func aNotificationSwitchIsSavedThroughTheHelper() async throws {
+        try await withStandIn { helper in
+            let model = helper.makeModel()
+            await model.connect()
+            #expect(model.settings?.notifications == NotificationSettings())
+
+            await model.setNotification(.restarted, on: false)
+
+            #expect(model.settings?.notifications.restarted == false)
+            let engine = try #require(helper.running).engine
+            #expect(await engine.settings().notifications == NotificationSettings(restarted: false))
+        }
+    }
+
     @Test func aSettingChangedByAnotherClientReachesTheSettingsWindow() async throws {
         try await withStandIn { helper in
             let model = helper.makeModel()

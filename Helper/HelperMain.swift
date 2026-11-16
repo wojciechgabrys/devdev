@@ -14,12 +14,14 @@ enum HelperMain {
             flavor: flavor,
             runningHelperExecutable: Bundle.main.executableURL ?? HelperLocation(
                 flavor: flavor, appBundle: HelperLocation.installedApp).helperExecutable)
+        let opener = AppOpener(flavor: flavor, appBundle: HelperLocation.app(containingHelper: Bundle.main.bundleURL))
+        let notifications = SystemNotifications(opener: opener)
         let host: HelperHost
         do {
             // The build is read once, at start: the app on disk may be replaced while this Helper runs.
             host = try HelperHost.start(
                 paths: paths, helperVersion: HelperBuild.identifier(ofExecutableAt: Bundle.main.executableURL),
-                loginItem: loginItem)
+                loginItem: loginItem, notifications: notifications)
         } catch let error as HelperError where error.code == HelperError.alreadyRunning {
             // One Helper per data folder. The one that runs keeps its Processes.
             exit(0)
@@ -38,18 +40,18 @@ enum HelperMain {
 
         let application = NSApplication.shared
         application.setActivationPolicy(.accessory)
+        // Clicking a notification opens the App on that Command's output.
+        notifications.start()
 
         // The menubar icon and panel stay for as long as the Helper runs, with or without the App.
         let model = MenubarModel(engine: host.engine)
-        let statusItem = StatusItemController(
-            model: model,
-            opener: AppOpener(flavor: flavor, appBundle: HelperLocation.app(containingHelper: Bundle.main.bundleURL)))
+        let statusItem = StatusItemController(model: model, opener: opener)
         Task { @MainActor in
             await model.start()
             statusItem.start()
         }
 
-        withExtendedLifetime((host, statusItem)) {
+        withExtendedLifetime((host, statusItem, notifications)) {
             application.run()
         }
     }

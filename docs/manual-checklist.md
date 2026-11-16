@@ -127,3 +127,37 @@ Run every check here with the App closed, unless a step says to open it. Install
   2. Choose Stop All and Quit in the panel. Log out and log back in.
   3. The new Helper starts: the icon is there, and opening the App shows no outdated-Helper banner.
 
+
+## Phase 4: notifications
+
+Install first with `scripts/install.sh`. Use a Project named `shop` with three Commands: `Vite` (`npm run dev`), `Queue` (`while :; do sleep 1; done`) and `Fails` (`sleep 2; exit 1`). Only `Vite` and `Queue` are included in Start All. Quit the App between checks unless a step says to open it.
+
+- [ ] **The first start asks for notification permission, and Allow leads to banners.**
+  1. Open `/Applications/devdev.app` on a Mac where devdev never ran. Note whether macOS asks whether `devdevHelper` may send notifications.
+  2. Click Allow. System Settings > Notifications lists `devdevHelper` with Allow notifications on and the style Banners.
+  3. If no prompt appeared, turn notifications on there by hand, and note that the prompt never showed.
+- [ ] **A user click shows no banner.**
+  1. In the App or the menubar panel, click Start, Restart and Stop on `Queue`, then Start All, Restart All and Stop All on `shop`.
+  2. No banner appears for any of them, and Notification Centre lists nothing new from devdev.
+- [ ] **A crash shows one banner, even after a user click.**
+  1. Click Start on `Fails`. After about 2 seconds exactly one banner appears: title `shop`, text `Fails crashed (exit 1)`.
+  2. Click Stop on `Fails`. It reads Stopped and no banner appears.
+- [ ] **Start All from an agent shows exactly one banner.**
+  1. With every Command Stopped, run this in Terminal. Press <kbd>Ctrl</kbd> + <kbd>C</kbd> once the answer is printed, and copy `shop`'s `id` from it:
+     `echo '{"id":1,"request":{"snapshot":{}}}' | nc -U ~/Library/Application\ Support/devdev/helper.sock`
+  2. Run the same way, with that ID: `echo '{"id":2,"origin":"agent","request":{"startAll":{"projectID":"<ID>"}}}' | nc -U ~/Library/Application\ Support/devdev/helper.sock`
+  3. Exactly one banner appears: `Start All by an agent: Vite and Queue started`. Phase 7 replaces these steps with the MCP tool `start_all`.
+  4. Run it again with `stopAll` in place of `startAll`. Exactly one banner appears: `Stop All by an agent: Vite and Queue stopped`.
+- [ ] **Clicking a banner opens the App on that Command's output.**
+  1. With the App closed, click Start on `Fails` in the menubar panel and wait for the crash banner.
+  2. Click the banner. The App opens with `Fails` selected and its output showing, ending with the exit line.
+  3. Select another Command in the App, crash `Fails` again and click the new banner. The App comes forward with `Fails` selected again.
+  4. Repeat once with the banner clicked from Notification Centre after it went away.
+- [ ] **Each notification switch turns its kind off.**
+  1. Press <kbd>Cmd</kbd> + <kbd>,</kbd>. Under Notifications, Crashed, Started, Restarted and Stopped or Finished are all on.
+  2. Turn Crashed off. Start `Fails`: no banner after it crashes. Turn Crashed back on.
+  3. Quit the App and open it again. Every switch kept its value.
+- [ ] **Notification permission survives a reinstall.**
+  1. With notifications allowed, change any line of Swift in `Helper/` and run `scripts/install.sh`.
+  2. Choose Stop All and Quit in the panel, then open `/Applications/devdev.app`.
+  3. Start `Fails`. Note whether the crash banner appears without a new prompt, and whether System Settings > Notifications still shows `devdevHelper` allowed.

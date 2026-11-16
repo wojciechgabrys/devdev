@@ -308,6 +308,13 @@ public final class WindowModel {
         await save(changed)
     }
 
+    /// One notification switch.
+    public func setNotification(_ kind: NotificationKind, on: Bool) async {
+        guard var changed = settings else { return }
+        changed.notifications[kind] = on
+        await save(changed)
+    }
+
     private func save(_ changed: HelperSettings) async {
         if case .settings(let saved)? = await perform(.updateSettings(changed)) {
             settings = saved

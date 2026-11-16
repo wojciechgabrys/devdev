@@ -10,6 +10,10 @@ let package = Package(
     ],
     targets: [
         .target(name: "DevDevCore"),
-        .testTarget(name: "DevDevCoreTests", dependencies: ["DevDevCore"]),
+        .testTarget(
+            name: "DevDevCoreTests",
+            dependencies: ["DevDevCore"],
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )

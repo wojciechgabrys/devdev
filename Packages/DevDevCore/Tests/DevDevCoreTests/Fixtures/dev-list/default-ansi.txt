@@ -1,0 +1,8 @@
+
+  [38;5;153mserver[39m php artisan serve [38;5;103m Illuminate\Foundation\Providers\ArtisanServicePro…[39m
+  [38;5;189mqueue [39m php artisan queue:listen --tries=1 --timeout=0 [38;5;103m Illuminate\Foundatio…[39m
+  [38;5;211mlogs  [39m php artisan pail --timeout=0 [38;5;103m Illuminate\Foundation\Providers\Artisa…[39m
+  [38;5;222mvite  [39m npm run dev [38;5;103m Illuminate\Foundation\Providers\ArtisanServiceProvider@…[39m
+
+                                                      [34;1mShowing [4] dev commands [39;22m
+

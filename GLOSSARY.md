@@ -39,7 +39,7 @@ A Command whose Process ended by itself with exit code 0.
 _Avoid_: Done, completed, exited
 
 **Crashed**:
-A Command whose Process ended by itself with a non-zero exit code. A Project is Crashed if any of its Commands is.
+A Command whose Process ended by itself with a non-zero exit code or a signal. A Project is Crashed if any of its Commands is.
 _Avoid_: Failed, errored, dead
 
 **Partly Running**:

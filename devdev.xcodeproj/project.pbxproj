@@ -8,10 +8,37 @@
 
 /* Begin PBXBuildFile section */
 		DD0000000000000000000001 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000002 /* DevDevCore */; };
+		DD0000000000000000000023 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000024 /* DevDevCore */; };
+		DD000000000000000000002C /* devdevHelper.app in Embed Helper */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000020 /* devdevHelper.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DD000000000000000000002E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD000000000000000000000B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD0000000000000000000027;
+			remoteInfo = devdevHelper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DD000000000000000000002B /* Embed Helper */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Helpers;
+			dstSubfolderSpec = 1;
+			files = (
+				DD000000000000000000002C /* devdevHelper.app in Embed Helper */,
+			);
+			name = "Embed Helper";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		DD0000000000000000000003 /* devdev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdev.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD0000000000000000000020 /* devdevHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdevHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0000000000000000000013 /* DevDevCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DevDevCore; path = Packages/DevDevCore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -19,6 +46,11 @@
 		DD0000000000000000000004 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = App;
+			sourceTree = "<group>";
+		};
+		DD0000000000000000000021 /* Helper */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Helper;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +64,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DD0000000000000000000022 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DD0000000000000000000023 /* DevDevCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -39,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				DD0000000000000000000004 /* App */,
+				DD0000000000000000000021 /* Helper */,
 				DD0000000000000000000013 /* DevDevCore */,
 				DD0000000000000000000007 /* Products */,
 			);
@@ -48,6 +89,7 @@
 			isa = PBXGroup;
 			children = (
 				DD0000000000000000000003 /* devdev.app */,
+				DD0000000000000000000020 /* devdevHelper.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -62,10 +104,12 @@
 				DD0000000000000000000009 /* Sources */,
 				DD0000000000000000000005 /* Frameworks */,
 				DD000000000000000000000A /* Resources */,
+				DD000000000000000000002B /* Embed Helper */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DD000000000000000000002D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DD0000000000000000000004 /* App */,
@@ -76,6 +120,29 @@
 			);
 			productName = devdev;
 			productReference = DD0000000000000000000003 /* devdev.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DD0000000000000000000027 /* devdevHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DD0000000000000000000028 /* Build configuration list for PBXNativeTarget "devdevHelper" */;
+			buildPhases = (
+				DD0000000000000000000025 /* Sources */,
+				DD0000000000000000000022 /* Frameworks */,
+				DD0000000000000000000026 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DD0000000000000000000021 /* Helper */,
+			);
+			name = devdevHelper;
+			packageProductDependencies = (
+				DD0000000000000000000024 /* DevDevCore */,
+			);
+			productName = devdevHelper;
+			productReference = DD0000000000000000000020 /* devdevHelper.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -89,6 +156,9 @@
 				LastUpgradeCheck = 2720;
 				TargetAttributes = {
 					DD0000000000000000000008 = {
+						CreatedOnToolsVersion = 27.2;
+					};
+					DD0000000000000000000027 = {
 						CreatedOnToolsVersion = 27.2;
 					};
 				};
@@ -111,12 +181,20 @@
 			projectRoot = "";
 			targets = (
 				DD0000000000000000000008 /* devdev */,
+				DD0000000000000000000027 /* devdevHelper */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		DD000000000000000000000A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DD0000000000000000000026 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -133,7 +211,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DD0000000000000000000025 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DD000000000000000000002D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD0000000000000000000027 /* devdevHelper */;
+			targetProxy = DD000000000000000000002E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		DD000000000000000000000E /* Debug */ = {
@@ -187,7 +280,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.devdev.app;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.devdev.app.debug;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -215,6 +308,56 @@
 			};
 			name = Release;
 		};
+		DD0000000000000000000029 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = devdev;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.devdev.helper.debug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		DD000000000000000000002A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = devdev;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.devdev.helper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -236,6 +379,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		DD0000000000000000000028 /* Build configuration list for PBXNativeTarget "devdevHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD0000000000000000000029 /* Debug */,
+				DD000000000000000000002A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -247,6 +399,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		DD0000000000000000000002 /* DevDevCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DevDevCore;
+		};
+		DD0000000000000000000024 /* DevDevCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DevDevCore;
 		};

@@ -60,10 +60,11 @@ jobs:
           xcodebuild -project devdev.xcodeproj -scheme devdev \
             -derivedDataPath "$DERIVED_DATA" -resolvePackageDependencies
 
+      # Apple Silicon only. A universal build compiles SwiftTerm twice and takes twice as long.
       - name: Build Release
         run: |
           xcodebuild -project devdev.xcodeproj -scheme devdev -configuration Release \
-            -destination platform=macOS -derivedDataPath "$DERIVED_DATA" build
+            -destination platform=macOS -derivedDataPath "$DERIVED_DATA" ARCHS=arm64 build
 
       - name: Make the DMG
         run: |

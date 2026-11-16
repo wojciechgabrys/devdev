@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the Release configuration and copies the app to /Applications/devdev.app.
+# Builds the Release configuration for Apple Silicon only and copies the app to /Applications/devdev.app.
 #
 # A running Helper is left alone: it keeps its Processes and keeps running the build it was
 # started from. The App shows a banner when the running Helper is outdated, and you decide there.
@@ -17,7 +17,7 @@ built="$derived_data/Build/Products/Release/devdev.app"
 
 cd "$root"
 xcodebuild -project devdev.xcodeproj -scheme devdev -configuration Release \
-    -destination platform=macOS -derivedDataPath "$derived_data" build
+    -destination platform=macOS -derivedDataPath "$derived_data" ARCHS=arm64 build
 
 if [ ! -d "$built/Contents/Helpers/devdevHelper.app" ]; then
     echo "The Release build has no Helper inside $built." >&2

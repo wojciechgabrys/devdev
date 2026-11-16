@@ -19,7 +19,7 @@ You define **Projects**, give each a list of **Commands**, and control them from
 
 ## Requirements
 
-- macOS 26
+- macOS 26 on Apple Silicon
 - Xcode with the macOS 26 SDK
 
 devdev is a personal tool. It is built locally, with no sandbox, signing, notarization or auto-update.
@@ -56,7 +56,7 @@ cd Packages/DevDevCore && swift test
 scripts/install.sh
 ```
 
-This builds the Release configuration and copies `devdev.app` to `/Applications`. Pass another folder as the first argument to install elsewhere. A running Helper is left alone; the App shows a banner when it is outdated.
+This builds the Release configuration for Apple Silicon and copies `devdev.app` to `/Applications`. Pass another folder as the first argument to install elsewhere. A running Helper is left alone; the App shows a banner when it is outdated.
 
 ## Use with an AI agent
 

@@ -130,6 +130,7 @@ private struct OutputTab: View {
         .overlay(alignment: .trailing) { Rectangle().fill(Graphite.line).frame(width: 1) }
         .contentShape(Rectangle())
         .onTapGesture { Task { await model.show(command: command.id) } }
+        .onMiddleClick { Task { await model.closeTab(command.id) } }
         .onHover { isHovering = $0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(command.settings.name) in \(projectName), \(command.statusText)")

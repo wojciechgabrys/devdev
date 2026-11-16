@@ -9,7 +9,7 @@ The throwaway code is not in the repo. Only this file and the fixtures in `Packa
 | # | Item | Result | Fallback taken |
 |---|---|---|---|
 | 1 | `php artisan dev:list` | Works. Has `--json`. | None |
-| 2 | SwiftTerm | Works for read-only output with `swift build`. **Not buildable with the three `xcodebuild` commands: Phase 2 stopped at the output view.** | None (none exists) |
+| 2 | SwiftTerm | Works for read-only output with `swift build`. Builds with `xcodebuild` after its build plug-in is trusted once in Xcode. | None (none exists) |
 | 3 | Login-item API, ad hoc signed | **Fails after a reinstall.** | **LaunchAgent file in `~/Library/LaunchAgents`** |
 | 4 | Notifications and status item from a background bundle | Status item works. Notifications unconfirmed: need a person. | None (none exists). Phases 3 and 4 are not stopped. |
 | 5 | Swift MCP SDK | Suitable. | None |
@@ -117,31 +117,18 @@ A throwaway SwiftPM package (swift-tools 6.2, macOS 26) built against SwiftTerm 
 - How it looks on screen: colours, scrolling, drag selection, <kbd>Cmd</kbd> + <kbd>C</kbd>, <kbd>Cmd</kbd> + <kbd>F</kbd> and the find bar. Only the API calls were run.
 - Speed when a 10,000-line buffer is replayed at once.
 
-### Phase 2 stop: SwiftTerm cannot be built by the three `xcodebuild` commands
+### Building with `xcodebuild`: the plug-in needs a one-time trust click
 
-Found on 2026-11-16 while building Phase 2. **Phase 2 is stopped at the output view. SwiftTerm is not in the build.**
+Found on 2026-11-16 while building Phase 2.
 
-- The spike built SwiftTerm with `swift build` in a throwaway SwiftPM package. It never built it with `xcodebuild`.
-- SwiftTerm `1.99.3` runs a build tool plug-in, `SwiftTermBuildInfoPlugin`, on its main target. The manifest has no switch to leave it out.
-- With SwiftTerm added to the `devdev` target as a remote package (`exactVersion 1.99.3`), `-resolvePackageDependencies` passed and `build` failed. The log names only this step:
+- The spike built SwiftTerm with `swift build` only. SwiftTerm `1.99.3` runs a build tool plug-in, `SwiftTermBuildInfoPlugin`, on its main target. The manifest has no switch to leave it out.
+- With SwiftTerm added to the `devdev` target (`exactVersion 1.99.3`), `xcodebuild ... build` first failed at this step:
 
   > Validate plug-in “SwiftTermBuildInfoPlugin” in package “swiftterm”
 
-- Xcode asks a person to trust a package plug-in before it runs it. The three commands of `docs/spec.md` section 1 carry no flag for that. The flag `-skipPackagePluginValidation` and the matching Xcode default both switch a security check off, so neither was used. That the trust check is the cause was not proven: the log gives no reason.
-- There is no fallback for SwiftTerm, so none was built.
-
-What was built without it:
-
-- Everything else in Phase 2. The package side of output is built and tested: replay, then live stream, per selected Command, and the view size sent to the Helper (`WindowModel`, `OutputSession`).
-- `App/TerminalOutputView.swift` holds the SwiftTerm view inside `#if canImport(SwiftTerm)`. **It has never been compiled.** Without SwiftTerm the Output column shows the status, the exit code and a line saying output is not shown.
-
-To finish Phase 2, a person decides one of these:
-
-1. Trust the plug-in on this Mac (open the project in Xcode with SwiftTerm added and choose Trust & Enable), then add the package to the `devdev` target again. Check that the three commands then pass from a terminal.
-2. Keep a copy of SwiftTerm in the repo with the plug-in removed and its generated files checked in.
-3. Pick another way to draw output.
-
-Later phases do not depend on SwiftTerm and can build.
+- Xcode asks a person to trust a package plug-in before it runs it. The check was not switched off. Phase 2 was stopped at the output view until the user chose Trust & Enable in Xcode.
+- After that click, the same three commands of `docs/spec.md` section 1 pass from a terminal with no extra flag. So the trust given in Xcode carries over to `xcodebuild`.
+- **The trust is per Mac and per plug-in version.** A fresh Mac, or a new SwiftTerm version, needs the click again: open `devdev.xcodeproj`, build, click the plug-in error, choose Trust & Enable.
 
 ## 3. Launch at login for an ad hoc signed Helper
 

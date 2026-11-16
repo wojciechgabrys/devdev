@@ -26,10 +26,8 @@ struct DevDevApp: App {
                     }
                 }
             }
-            #if canImport(SwiftTerm)
-                // Find in the output: SwiftTerm answers the standard Find menu items.
-                TextEditingCommands()
-            #endif
+            // Find in the output: SwiftTerm answers the standard Find menu items.
+            TextEditingCommands()
         }
 
         Settings {

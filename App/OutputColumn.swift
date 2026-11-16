@@ -19,22 +19,15 @@ struct OutputColumn: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 Divider()
-                #if canImport(SwiftTerm)
-                    if let session = model.output {
-                        TerminalOutputView(session: session) { columns, rows in
-                            Task { await model.outputViewResized(columns: columns, rows: rows) }
-                        }
-                        // A new session means a new replay: start from an empty terminal.
-                        .id(session.id)
-                    } else {
-                        Color(nsColor: .textBackgroundColor)
+                if let session = model.output {
+                    TerminalOutputView(session: session) { columns, rows in
+                        Task { await model.outputViewResized(columns: columns, rows: rows) }
                     }
-                #else
-                    // SwiftTerm draws the output and there is no fallback for it.
-                    ContentUnavailableView(
-                        "Output is not shown in this build", systemImage: "terminal",
-                        description: Text("SwiftTerm is not part of this build. See docs/spike-results.md."))
-                #endif
+                    // A new session means a new replay: start from an empty terminal.
+                    .id(session.id)
+                } else {
+                    Color(nsColor: .textBackgroundColor)
+                }
             }
         } else {
             ContentUnavailableView("No Command selected", systemImage: "terminal")

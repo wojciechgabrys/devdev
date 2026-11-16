@@ -1,6 +1,3 @@
-// SwiftTerm is not part of this build yet. See "Phase 2 stop" in docs/spike-results.md.
-// This file has never been compiled. It takes effect once SwiftTerm is added to the devdev target.
-#if canImport(SwiftTerm)
 import AppKit
 import DevDevCore
 import SwiftTerm
@@ -71,4 +68,3 @@ struct TerminalOutputView: NSViewRepresentable {
         func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {}
     }
 }
-#endif

@@ -25,7 +25,7 @@ Checks that need a person at the Mac. None of them is verified until someone tic
 
 ## Phase 2: main window
 
-Phase 2 is stopped at the output view: SwiftTerm is not in the build (see "Phase 2 stop" in `docs/spike-results.md`). Steps that read output cannot pass until it is.
+SwiftTerm's build plug-in must be trusted once per Mac in Xcode before any build works (see item 2 in `docs/spike-results.md`).
 
 - [ ] **`scripts/install.sh` installs the app and it opens.**
   1. Run `scripts/install.sh` from the repo root. It ends with `Installed /Applications/devdev.app`.

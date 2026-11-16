@@ -35,6 +35,7 @@ struct DevDevApp: App {
                     }
                 }
             }
+            TabCommands()
             // Find in the output: SwiftTerm answers the standard Find menu items.
             TextEditingCommands()
         }

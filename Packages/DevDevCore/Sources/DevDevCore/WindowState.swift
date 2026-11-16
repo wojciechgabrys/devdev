@@ -231,6 +231,25 @@ public struct WindowState: Sendable, Equatable {
         }
     }
 
+    /// The tab Cmd-1 to Cmd-9 show, counting from the left. Cmd-0 (number 0) shows the last tab.
+    /// Nil when there is no tab with that number.
+    public func tab(number: Int) -> UUID? {
+        if number == 0 { return tabs.last }
+        return tabs.indices.contains(number - 1) ? tabs[number - 1] : nil
+    }
+
+    /// What Cmd-W closes.
+    public enum CloseTarget: Equatable, Sendable {
+        case tab(UUID)
+        case window
+    }
+
+    /// Cmd-W closes the selected tab. With no tab open it closes the window.
+    public var closeTarget: CloseTarget {
+        if let id = selectedCommandID, tabs.contains(id) { return .tab(id) }
+        return .window
+    }
+
     private mutating func openTab(_ id: UUID) {
         if !tabs.contains(id) { tabs.append(id) }
     }

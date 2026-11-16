@@ -182,7 +182,7 @@ The Graphite look: a dark pro-tool window, with a matching light palette when ma
 
 1. **Title strip** — the selected Command and its Project, and a **Go to Command** field (Cmd-K): type part of a Command's or Project's name, pick with the arrows, press Return.
 2. **Project tree** — every Project as a folder you expand into its Commands. A Project row shows its name and how many Commands run; hovering shows Start All / Restart All / Stop All. A Command row shows its status, name, and how long it has run or how it ended. Context menus hold add, edit, delete, reorder (Move Up / Move Down), Rescan, Show in Finder and Remove Project. Editing is a form with the fields from section 4.
-3. **Output tabs** — each opened Command gets a tab, from any Project. Closing the selected tab selects its right neighbour, else its left. Cmd-Shift-[ and ] move between tabs.
+3. **Output tabs** — each opened Command gets a tab, from any Project. Closing the selected tab selects its right neighbour, else its left. Cmd-W closes the selected tab; with no tab open it closes the window. Cmd-1 to Cmd-9 show a tab by its place from the left, Cmd-0 the last one. Cmd-Shift-[ and ] move between tabs.
 4. **Command bar** — the Command's Project and name, status with exit code when there is one, command line, restart-to-apply, auto-restart and file-watch hints, Start / Restart / Stop, and a menu with the rest.
 5. **Output** of the selected Command (section 5).
 6. **Status bar** — how many Commands run and crashed, the Helper link, and how long the selected Command has run.

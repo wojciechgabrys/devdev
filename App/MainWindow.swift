@@ -41,6 +41,7 @@ struct MainWindow: View {
                 GoToCommand(model: model, isOpen: $actions.isGoToOpen)
             }
         }
+        .focusedSceneValue(\.windowModel, model)
         .task { await model.connect() }
         // A folder dragged onto the window becomes a Project. The Helper refuses anything else.
         .dropDestination(for: URL.self) { urls, _ in

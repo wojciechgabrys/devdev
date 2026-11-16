@@ -69,14 +69,11 @@ private struct TabStrip: View {
         .background(Graphite.chrome)
         .overlay(alignment: .bottom) { Rectangle().fill(Graphite.line).frame(height: 1) }
         .background {
-            // Cmd-Shift-[ and ] move between tabs, as in Safari and Xcode.
+            // Cmd-Shift-[ and ] move between tabs, as in Safari and Xcode. Cmd-W and Cmd-1 to 0 live in
+            // `TabCommands`.
             Group {
                 Button("Previous Tab") { step(-1) }.keyboardShortcut("[", modifiers: [.command, .shift])
                 Button("Next Tab") { step(1) }.keyboardShortcut("]", modifiers: [.command, .shift])
-                Button("Close Tab") {
-                    if let id = model.state.selectedCommandID { Task { await model.closeTab(id) } }
-                }
-                .keyboardShortcut("w", modifiers: [.command, .option])
             }
             .opacity(0)
             .accessibilityHidden(true)

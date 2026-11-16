@@ -100,6 +100,31 @@ import Testing
         #expect(state.selectedCommand?.id == f.vite.id)
     }
 
+    @Test func commandNumberPicksATabFromTheLeftAndZeroPicksTheLast() {
+        let f = Fixture()
+        var state = f.connected()
+        state.select(tab: f.vite.id)
+        state.select(tab: f.horizon.id)
+
+        #expect(state.tab(number: 1) == f.serve.id)
+        #expect(state.tab(number: 3) == f.horizon.id)
+        #expect(state.tab(number: 4) == nil)
+        #expect(state.tab(number: 9) == nil)
+        #expect(state.tab(number: 0) == f.horizon.id)
+        #expect(WindowState().tab(number: 0) == nil)
+    }
+
+    @Test func commandWClosesTheSelectedTabThenTheWindow() {
+        let f = Fixture()
+        var state = f.connected()
+        state.select(tab: f.vite.id)
+        #expect(state.closeTarget == .tab(f.vite.id))
+
+        state.closeTab(f.vite.id)
+        state.closeTab(f.serve.id)
+        #expect(state.closeTarget == .window)
+    }
+
     @Test func aDeletedCommandLosesItsTab() {
         let f = Fixture()
         var state = f.connected()

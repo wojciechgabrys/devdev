@@ -106,6 +106,7 @@ struct MainWindow: View {
 struct TitleStrip: View {
     let model: WindowModel
     let actions: WindowActions
+    static let height: CGFloat = 40
 
     var body: some View {
         ZStack {
@@ -116,9 +117,10 @@ struct TitleStrip: View {
             }
             .padding(.trailing, 12)
         }
-        .frame(height: 40)
+        .frame(height: Self.height)
         .frame(maxWidth: .infinity)
         .background(Graphite.chrome)
+        .background(TrafficLights(stripHeight: Self.height))
         .overlay(alignment: .bottom) { Rectangle().fill(Graphite.line).frame(height: 1) }
         .gesture(WindowDragGesture())
         .allowsWindowActivationEvents(true)

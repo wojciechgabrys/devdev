@@ -15,7 +15,16 @@ Inspirations: [Solo](https://soloterm.com/) for process management, [F-Bar](http
 - Single user: the author, on their own Mac. Built locally from Xcode. No App Sandbox, no notarization, no update mechanism, no licensing.
 - macOS 26 only. Swift, SwiftUI first; drop to AppKit where SwiftUI cannot do the job (the output view, possibly the status item). Use current APIs freely; no fallbacks for older systems.
 - Standard macOS look. Follow the system appearance.
-- The project must build and test from the command line (`swift test`, `xcodebuild`) so an agent can verify its own work. How the Xcode project is produced (hand-made, XcodeGen, …) is your choice.
+- The project must build and test from the command line so an agent can verify its own work. The build pipeline runs exactly these, from the repo root, and all three must keep passing:
+  - `xcodebuild -project devdev.xcodeproj -scheme devdev -resolvePackageDependencies`
+  - `xcodebuild -project devdev.xcodeproj -scheme devdev -destination platform=macOS build`
+  - `xcodebuild -project devdev.xcodeproj -scheme devdev -destination platform=macOS test`
+- A skeleton already exists and satisfies them: `devdev.xcodeproj` (app target `devdev`, sources in `App/`), the package `Packages/DevDevCore`, the shared scheme `devdev`, and the test plan `devdev.xctestplan`. Build on it; do not replace it. Keep these properties:
+  - `devdev.xcodeproj` and its shared scheme are **tracked in git**. Do not generate the project at build time or ignore it.
+  - Exactly one Xcode project at the root, and the scheme keeps the project's name, `devdev`.
+  - Every test target, including each new package test target, is listed in `devdev.xctestplan`, so the `test` command above runs it. `swift test` inside a package is a faster loop for you, not a substitute.
+  - The Helper and the `devdev` CLI are new targets in this same project, built by the `devdev` scheme.
+  - The package folder stays referenced in the project navigator; without that reference Xcode does not see the package's test targets.
 
 ## 2. Non-goals
 
@@ -53,7 +62,7 @@ Rules that follow from this:
 
 Put the logic in a Swift package with tests, and keep the UI targets thin:
 
-- Process running, status rules, output buffering, auto-restart, file watching, Discovery, the Helper protocol, and the MCP tool handlers all live in the package and are covered by `swift test`.
+- Process running, status rules, output buffering, auto-restart, file watching, Discovery, the Helper protocol, and the MCP tool handlers all live in `Packages/DevDevCore` (split it into more targets or packages as it grows) and are covered by tests that the `devdev` scheme runs.
 - Tests run real child processes (`/bin/sh -c 'echo hi; exit 3'`, `sleep`, a script that ignores SIGTERM) rather than mocks wherever that is practical.
 - Views contain no rules. If a view needs to decide something, the decision belongs in the package.
 

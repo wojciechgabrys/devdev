@@ -9,15 +9,13 @@ final class StatusItemController {
     private let model: MenubarModel
     private let opener: AppOpener
     private var item: NSStatusItem?
-    private let popover = NSPopover()
+    private var popover = NSPopover()
 
     init(model: MenubarModel, opener: AppOpener) {
         self.model = model
         self.opener = opener
-        popover.behavior = .transient
-        popover.animates = false
-        popover.contentViewController = NSHostingController(
-            rootView: MenubarPanelView(model: model, opener: opener, close: { [weak self] in self?.closePanel() }))
+        popover = MenubarPopover.make(
+            MenubarPanelView(model: model, opener: opener, close: { [weak self] in self?.closePanel() }))
     }
 
     /// Shows or hides the icon now, then follows the model.

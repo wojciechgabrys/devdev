@@ -75,6 +75,16 @@ SwiftTerm's build plug-in must be trusted once per Mac in Xcode before any build
   3. Choose Stop All and Quit in the Debug app. The installed app's Command still reads Running.
 - [ ] **The Settings window opens.**
   1. Press <kbd>Cmd</kbd> + <kbd>,</kbd>. A Settings window opens. Phase 3 adds its first two switches.
+- [ ] **On a Mac that never built devdev, SwiftTerm's plug-in is trusted once and the command-line build then passes.** From spike item 2.
+  1. Clone the repo on a Mac that never built it, or after a SwiftTerm version change.
+  2. Run `xcodebuild -project devdev.xcodeproj -scheme devdev -destination platform=macOS build`. It fails at `Validate plug-in “SwiftTermBuildInfoPlugin” in package “swiftterm”`.
+  3. Open `devdev.xcodeproj` in Xcode and build. Click the plug-in error and choose Trust & Enable.
+  4. Run the same `xcodebuild` line again from Terminal. It ends with `** BUILD SUCCEEDED **`.
+- [ ] **A full 10,000-line output replays without a long pause.** From spike item 2, which only timed API calls.
+  1. Add a Command with the command line `seq 1 20000; sleep 600` and start it.
+  2. Quit the App with <kbd>Cmd</kbd> + <kbd>Q</kbd> and open it again. Select the Command.
+  3. The output shows within about a second and ends at line `20000`. Scroll to the top: it starts at about line `10001`, and lines 1 to 10000 are gone.
+  4. Scrolling and selecting stay smooth.
 
 ## Phase 3: menubar panel
 
@@ -198,3 +208,17 @@ Install first with `scripts/install.sh`. Use a Project named `shop` with three C
   2. With `laravel/horizon` required, `queue` starts unticked.
 - [ ] **A pnpm Node project proposes `pnpm run dev`.**
   1. Add a folder with a `package.json` that has a `dev` script and a `pnpm-lock.yaml`. The sheet lists one row, `dev`, `pnpm run dev`.
+
+## Phase 7: the `devdev` CLI and MCP
+
+- [ ] **Claude Code, set up with the line from Settings, can list a Project, restart its queue Command and read the output.**
+  1. Run `scripts/install.sh`, open `/Applications/devdev.app` and open Settings. Under MCP the line reads `claude mcp add devdev -- "/Applications/devdev.app/Contents/Helpers/devdev" mcp`.
+  2. Click Copy, paste the line into Terminal and run it. `claude mcp list` shows `devdev` as connected.
+  3. Quit the App with Cmd-Q (the Helper keeps running). In Terminal, `cd` into the Laravel + Vite project folder and start `claude`.
+  4. Ask it to list the devdev Projects. It calls `list_projects` and names the project with its folder and status.
+  5. Ask it to restart the queue Command. It calls `restart_command` and answers with `Running` (or `Crashed` with an exit code if the queue fails at once). One banner says the queue restarted, from an agent.
+  6. Ask it for the last 20 lines of the queue output. It calls `get_output` and shows plain text with no escape codes, ending with the restart line.
+  7. Ask for a Command name that does not exist, such as `nope`. The answer is a sentence that lists the Command names.
+- [ ] **`devdev mcp` starts the Helper when it is not running.**
+  1. In the menubar panel, choose Stop All and Quit.
+  2. In Claude Code, ask again to list the devdev Projects. The answer comes within a few seconds and the menubar icon is back.

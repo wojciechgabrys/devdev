@@ -1,10 +1,13 @@
+import AppKit
 import DevDevCore
 import SwiftUI
 
 /// The Settings window. The Helper stores every setting; this only shows and forwards them.
-/// A later phase adds MCP.
 struct SettingsView: View {
     let model: WindowModel
+
+    /// Which `devdev` binary the line names is decided in `DevDevCore` (`MCPSetup`).
+    private let mcpLine = MCPSetup.line(flavor: BuildFlavor.current(), appBundle: Bundle.main.bundleURL)
 
     var body: some View {
         Form {
@@ -41,6 +44,22 @@ struct SettingsView: View {
                 }
             } else {
                 Text("Settings show once devdev is connected to the Helper.")
+                    .foregroundStyle(.secondary)
+            }
+            Section("MCP") {
+                Text("Run this in Terminal to let Claude Code control and read your Commands:")
+                HStack(alignment: .top) {
+                    Text(mcpLine)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Copy") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(mcpLine, forType: .string)
+                    }
+                }
+                Text("Agents can start, stop, restart and read output. They cannot add, edit or delete anything.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }

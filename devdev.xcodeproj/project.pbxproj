@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DD0000000000000000000040 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000041 /* DevDevCore */; };
+		DD0000000000000000000042 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000043 /* MCP */; };
+		DD0000000000000000000044 /* devdev in Embed CLI */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000045 /* devdev */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		DD0000000000000000000001 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000002 /* DevDevCore */; };
 		DD0000000000000000000023 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000024 /* DevDevCore */; };
 		DD000000000000000000002C /* devdevHelper.app in Embed Helper */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000020 /* devdevHelper.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -14,6 +17,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		DD0000000000000000000046 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD000000000000000000000B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD0000000000000000000047;
+			remoteInfo = devdevCLI;
+		};
 		DD000000000000000000002E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DD000000000000000000000B /* Project object */;
@@ -24,6 +34,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		DD0000000000000000000048 /* Embed CLI */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Helpers;
+			dstSubfolderSpec = 1;
+			files = (
+				DD0000000000000000000044 /* devdev in Embed CLI */,
+			);
+			name = "Embed CLI";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DD000000000000000000002B /* Embed Helper */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -38,12 +59,18 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DD0000000000000000000045 /* devdev */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = devdev; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0000000000000000000003 /* devdev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdev.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0000000000000000000013 /* DevDevCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DevDevCore; path = Packages/DevDevCore; sourceTree = "<group>"; };
 		DD0000000000000000000020 /* devdevHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdevHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		DD0000000000000000000049 /* CLI */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CLI;
+			sourceTree = "<group>";
+		};
 		DD0000000000000000000004 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = App;
@@ -57,6 +84,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		DD000000000000000000004A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DD0000000000000000000040 /* DevDevCore in Frameworks */,
+				DD0000000000000000000042 /* MCP in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DD0000000000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -82,6 +118,7 @@
 			children = (
 				DD0000000000000000000004 /* App */,
 				DD0000000000000000000021 /* Helper */,
+				DD0000000000000000000049 /* CLI */,
 				DD0000000000000000000013 /* DevDevCore */,
 				DD0000000000000000000007 /* Products */,
 			);
@@ -92,6 +129,7 @@
 			children = (
 				DD0000000000000000000003 /* devdev.app */,
 				DD0000000000000000000020 /* devdevHelper.app */,
+				DD0000000000000000000045 /* devdev */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -99,6 +137,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		DD0000000000000000000047 /* devdevCLI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DD000000000000000000004C /* Build configuration list for PBXNativeTarget "devdevCLI" */;
+			buildPhases = (
+				DD000000000000000000004B /* Sources */,
+				DD000000000000000000004A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DD0000000000000000000049 /* CLI */,
+			);
+			name = devdevCLI;
+			packageProductDependencies = (
+				DD0000000000000000000041 /* DevDevCore */,
+				DD0000000000000000000043 /* MCP */,
+			);
+			productName = devdev;
+			productReference = DD0000000000000000000045 /* devdev */;
+			productType = "com.apple.product-type.tool";
+		};
 		DD0000000000000000000008 /* devdev */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DD0000000000000000000010 /* Build configuration list for PBXNativeTarget "devdev" */;
@@ -107,11 +168,13 @@
 				DD0000000000000000000005 /* Frameworks */,
 				DD000000000000000000000A /* Resources */,
 				DD000000000000000000002B /* Embed Helper */,
+				DD0000000000000000000048 /* Embed CLI */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				DD000000000000000000002D /* PBXTargetDependency */,
+				DD000000000000000000004F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DD0000000000000000000004 /* App */,
@@ -164,6 +227,9 @@
 					DD0000000000000000000027 = {
 						CreatedOnToolsVersion = 27.2;
 					};
+					DD0000000000000000000047 = {
+						CreatedOnToolsVersion = 27.2;
+					};
 				};
 			};
 			buildConfigurationList = DD000000000000000000000D /* Build configuration list for PBXProject "devdev" */;
@@ -178,6 +244,7 @@
 			packageReferences = (
 				DD000000000000000000000C /* XCLocalSwiftPackageReference "Packages/DevDevCore" */,
 				DD0000000000000000000032 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+				DD0000000000000000000050 /* XCRemoteSwiftPackageReference "swift-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DD0000000000000000000007 /* Products */;
@@ -186,6 +253,7 @@
 			targets = (
 				DD0000000000000000000008 /* devdev */,
 				DD0000000000000000000027 /* devdevHelper */,
+				DD0000000000000000000047 /* devdevCLI */,
 			);
 		};
 /* End PBXProject section */
@@ -208,6 +276,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		DD000000000000000000004B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DD0000000000000000000009 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -225,6 +300,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		DD000000000000000000004F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD0000000000000000000047 /* devdevCLI */;
+			targetProxy = DD0000000000000000000046 /* PBXContainerItemProxy */;
+		};
 		DD000000000000000000002D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = DD0000000000000000000027 /* devdevHelper */;
@@ -233,6 +313,34 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		DD000000000000000000004D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_MODULE_NAME = devdevCLI;
+				PRODUCT_NAME = devdev;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		DD000000000000000000004E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_MODULE_NAME = devdevCLI;
+				PRODUCT_NAME = devdev;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 		DD000000000000000000000E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -369,6 +477,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		DD000000000000000000004C /* Build configuration list for PBXNativeTarget "devdevCLI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD000000000000000000004D /* Debug */,
+				DD000000000000000000004E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		DD000000000000000000000D /* Build configuration list for PBXProject "devdev" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -406,6 +523,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		DD0000000000000000000050 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/modelcontextprotocol/swift-sdk";
+			requirement = {
+				kind = exactVersion;
+				version = 0.12.1;
+			};
+		};
 		DD0000000000000000000032 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
@@ -417,6 +542,15 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		DD0000000000000000000041 /* DevDevCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DevDevCore;
+		};
+		DD0000000000000000000043 /* MCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DD0000000000000000000050 /* XCRemoteSwiftPackageReference "swift-sdk" */;
+			productName = MCP;
+		};
 		DD0000000000000000000002 /* DevDevCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DevDevCore;

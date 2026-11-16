@@ -23,6 +23,10 @@ if [ ! -d "$built/Contents/Helpers/devdevHelper.app" ]; then
     echo "The Release build has no Helper inside $built." >&2
     exit 1
 fi
+if [ ! -x "$built/Contents/Helpers/devdev" ]; then
+    echo "The Release build has no devdev CLI inside $built." >&2
+    exit 1
+fi
 
 # Copy beside the old app first, then swap, so a failed copy leaves the old app in place.
 staging="$destination_folder/.devdev-install.$$"

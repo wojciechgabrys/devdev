@@ -30,6 +30,13 @@ struct MainWindow: View {
             }
             return !urls.isEmpty
         }
+        .sheet(
+            item: Binding(
+                get: { model.discoveryChecklist },
+                set: { if $0 == nil { model.dismissDiscovery() } })
+        ) { checklist in
+            DiscoveryChecklistView(model: model, checklist: checklist)
+        }
         .alert(
             "devdev",
             isPresented: Binding(

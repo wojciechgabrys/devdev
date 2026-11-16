@@ -44,6 +44,10 @@ public final class WindowModel {
     public var errorMessage: String?
     /// The Settings the Helper stores. Nil until the Helper answers, or when it is too old to know them.
     public private(set) var settings: HelperSettings?
+    /// The Discovery checklist waiting for the user. Nil when none is shown.
+    public private(set) var discoveryChecklist: DiscoveryChecklist?
+    /// The Project Discovery is reading right now.
+    public private(set) var discoveringProjectID: UUID?
 
     private let socketPath: String
     private let expectedHelperBuild: String
@@ -255,12 +259,52 @@ public final class WindowModel {
     public func restartAll(_ projectID: UUID) async { await perform(.restartAll(projectID: projectID)) }
 
     /// Adds the folder as a Project and selects it. A folder that already is a Project is just selected.
+    /// A new Project then gets the Discovery checklist when Discovery proposes anything.
     public func addProject(folder: URL) async {
+        // Taken before asking: the Helper's configuration event may arrive before its answer.
+        let known = Set(state.projects.map(\.id))
         guard case .project(let project)? = await perform(.addProject(folder: folder.path, name: nil)) else {
             return
         }
+        let isNew = !known.contains(project.id)
         state.include(project)
         await select(project: project.id)
+        if isNew {
+            await discover(project.id, reason: .projectAdded)
+        }
+    }
+
+    // MARK: - Discovery
+
+    /// Asks the Helper what Discovery proposes now and shows the checklist, even when it is empty.
+    public func rescan(_ projectID: UUID) async {
+        await discover(projectID, reason: .rescan)
+    }
+
+    private func discover(_ projectID: UUID, reason: DiscoveryChecklist.Reason) async {
+        guard discoveringProjectID == nil else { return }
+        discoveringProjectID = projectID
+        defer { discoveringProjectID = nil }
+        guard case .discovery(let plan)? = await perform(.discover(projectID: projectID)) else { return }
+        if reason == .projectAdded, plan.add.isEmpty { return }
+        discoveryChecklist = DiscoveryChecklist(plan: plan, reason: reason)
+    }
+
+    /// Adds the checked proposals as Discovery-made Commands and deletes the checked removals.
+    public func applyDiscovery(_ checklist: DiscoveryChecklist) async {
+        discoveryChecklist = nil
+        let projectID = checklist.plan.projectID
+        for settings in checklist.commandsToAdd {
+            await perform(.addCommand(projectID: projectID, settings: settings, madeByDiscovery: true))
+        }
+        for commandID in checklist.commandsToRemove {
+            await perform(.deleteCommand(commandID: commandID))
+        }
+    }
+
+    /// The user closed the checklist without confirming. Nothing changes.
+    public func dismissDiscovery() {
+        discoveryChecklist = nil
     }
 
     /// The Helper stops the Project's Processes, then removes it.

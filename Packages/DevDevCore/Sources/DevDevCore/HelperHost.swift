@@ -14,13 +14,14 @@ public final class HelperHost: Sendable {
         timings: Timings = .standard,
         helperVersion: String = DevDevCore.version,
         loginItem: (any LoginItem)? = nil,
-        notifications: (any NotificationPoster)? = nil
+        notifications: (any NotificationPoster)? = nil,
+        devList: (any DevListRunner)? = nil
     ) throws -> HelperHost {
         try FileManager.default.createDirectory(
             at: paths.dataFolder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let store = ConfigurationStore(file: paths.configurationFile)
         let engine = HelperEngine(configuration: try store.load(), store: store, shell: shell, timings: timings,
-            helperVersion: helperVersion, loginItem: loginItem, notifications: notifications)
+            helperVersion: helperVersion, loginItem: loginItem, notifications: notifications, devList: devList)
         let server = HelperServer(engine: engine, socketPath: paths.socketPath)
         try server.start()
         return HelperHost(paths: paths, engine: engine, server: server)

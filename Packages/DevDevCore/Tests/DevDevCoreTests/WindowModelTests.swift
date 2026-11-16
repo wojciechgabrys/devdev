@@ -12,8 +12,11 @@ final class HelperStandIn: @unchecked Sendable {
     private var host: HelperHost?
     private var launchCount = 0
     private var version = DevDevCore.version
+    /// What Discovery's `dev:list` answers in this Helper.
+    let devList: (any DevListRunner)?
 
-    init() throws {
+    init(devList: (any DevListRunner)? = nil) throws {
+        self.devList = devList
         root = try makeTemporaryFolder()
         paths = HelperPaths(dataFolder: root.appendingPathComponent("d", isDirectory: true))
         projectFolder = root.appendingPathComponent("shop", isDirectory: true)
@@ -40,7 +43,7 @@ final class HelperStandIn: @unchecked Sendable {
     func start(version: String? = nil) throws {
         let host = try HelperHost.start(
             paths: paths, shell: .plain, timings: Timings(killEscalation: .seconds(3)),
-            helperVersion: version ?? lock.withLock { self.version })
+            helperVersion: version ?? lock.withLock { self.version }, devList: devList)
         lock.withLock { self.host = host }
         // Like the Helper program: exit when Stop All and Quit asks for it.
         Task { [weak self] in
@@ -73,8 +76,10 @@ final class HelperStandIn: @unchecked Sendable {
 
 /// The model behind the main window, against a real Helper over a real socket.
 @MainActor @Suite struct WindowModelTests {
-    private func withStandIn(_ body: (HelperStandIn) async throws -> Void) async throws {
-        let helper = try HelperStandIn()
+    private func withStandIn(
+        devList: (any DevListRunner)? = nil, _ body: (HelperStandIn) async throws -> Void
+    ) async throws {
+        let helper = try HelperStandIn(devList: devList)
         do {
             try await body(helper)
         } catch {
@@ -405,6 +410,110 @@ final class HelperStandIn: @unchecked Sendable {
 
             #expect(model.state.selectedCommandID == second)
             try await waitUntil("the output of the second Command arrives") { model.output?.commandID == second }
+        }
+    }
+
+    // MARK: - Discovery
+
+    private func makeLaravelNodeProject(_ helper: HelperStandIn) throws {
+        let fixture = try projectFixture("laravel-node")
+        for file in ["composer.json", "package.json", "package-lock.json"] {
+            try FileManager.default.copyItem(
+                at: fixture.appendingPathComponent(file), to: helper.projectFolder.appendingPathComponent(file))
+        }
+    }
+
+    @Test func addingANewProjectShowsTheChecklistAndOnlyTheConfirmedCommandsAreAddedAsDiscoveryMade() async throws {
+        let runner = try FakeDevListRunner(fixture: "default.json")
+        try await withStandIn(devList: runner) { helper in
+            try makeLaravelNodeProject(helper)
+            let model = helper.makeModel()
+            await model.connect()
+
+            await model.addProject(folder: helper.projectFolder)
+
+            var checklist = try #require(model.discoveryChecklist)
+            #expect(checklist.reason == .projectAdded)
+            #expect(checklist.plan.add.map(\.settings.name) == ["server", "queue", "logs", "vite"])
+            #expect(model.state.selectedProject?.commands.isEmpty == true)
+
+            checklist.addChecked[2] = false
+            await model.applyDiscovery(checklist)
+
+            #expect(model.discoveryChecklist == nil)
+            try await waitUntil("three Commands show") { model.state.selectedProject?.commands.count == 3 }
+            let commands = try #require(model.state.selectedProject?.commands)
+            #expect(commands.map(\.settings.name) == ["server", "queue", "vite"])
+            #expect(commands.map(\.madeByDiscovery) == [true, true, true])
+        }
+    }
+
+    @Test func dismissingTheChecklistAddsNothing() async throws {
+        try await withStandIn(devList: try FakeDevListRunner(fixture: "default.json")) { helper in
+            try makeLaravelNodeProject(helper)
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+            #expect(model.discoveryChecklist != nil)
+
+            model.dismissDiscovery()
+
+            #expect(model.discoveryChecklist == nil)
+            let saved = try ConfigurationStore(file: helper.paths.configurationFile).load()
+            #expect(saved.projects.first?.commands.isEmpty == true)
+        }
+    }
+
+    @Test func addingAFolderThatIsAlreadyAProjectShowsNoChecklist() async throws {
+        let runner = try FakeDevListRunner(fixture: "default.json")
+        try await withStandIn(devList: runner) { helper in
+            try makeLaravelNodeProject(helper)
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+            model.dismissDiscovery()
+
+            await model.addProject(folder: helper.projectFolder)
+
+            #expect(model.discoveryChecklist == nil)
+            #expect(runner.runs.count == 1)
+        }
+    }
+
+    @Test func rescanOffersNewProposalsAndStaleDiscoveryMadeCommandsButNeverEditedOnes() async throws {
+        let runner = try FakeDevListRunner(fixture: "default.json")
+        try await withStandIn(devList: runner) { helper in
+            try makeLaravelNodeProject(helper)
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+            await model.applyDiscovery(try #require(model.discoveryChecklist))
+            try await waitUntil("four Commands show") { model.state.selectedProject?.commands.count == 4 }
+            let project = try #require(model.state.selectedProject)
+            let queue = try #require(project.commands.first { $0.settings.name == "queue" })
+            var draft = CommandDraft(queue.settings)
+            draft.commandLine = "php artisan queue:work"
+            #expect(await model.updateCommand(queue.id, draft: draft))
+            try runner.answer(withFixture: "custom-without-defaults.json")
+
+            await model.rescan(project.id)
+
+            var checklist = try #require(model.discoveryChecklist)
+            #expect(checklist.reason == .rescan)
+            #expect(checklist.plan.add.map(\.settings.name) == ["stripe", "horizon", "scheduler", "watch:docs"])
+            // `npm run dev` is still proposed, from package.json, so vite stays.
+            #expect(checklist.plan.remove.map(\.name) == ["server", "logs"])
+            #expect(checklist.removeChecked == [false, false])
+
+            checklist.addChecked = [false, true, false, false]
+            checklist.removeChecked = [true, false]
+            await model.applyDiscovery(checklist)
+
+            try await waitUntil("the Commands change") {
+                model.state.selectedProject?.commands.map(\.settings.name) == ["queue", "logs", "vite", "horizon"]
+            }
+            let after = try #require(model.state.selectedProject?.commands)
+            #expect(after.map(\.madeByDiscovery) == [false, true, true, true])
         }
     }
 }

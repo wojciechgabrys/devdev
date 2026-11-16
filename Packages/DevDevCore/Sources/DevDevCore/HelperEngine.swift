@@ -52,6 +52,8 @@ public actor HelperEngine {
     private var runCounter = 0
     private var waitCounter = 0
     private let folderWatcher: FolderWatcherFactory
+    /// Runs `php artisan dev:list` for Discovery.
+    private let devList: any DevListRunner
     /// One per Project with a Running Command that restarts when files change.
     private var watches: [UUID: Watch] = [:]
 
@@ -71,8 +73,10 @@ public actor HelperEngine {
         now: @escaping @Sendable () -> Date = { Date() },
         loginItem: (any LoginItem)? = nil,
         notifications poster: (any NotificationPoster)? = nil,
-        folderWatcher: @escaping FolderWatcherFactory = FSEventsFolderWatcher.factory
+        folderWatcher: @escaping FolderWatcherFactory = FSEventsFolderWatcher.factory,
+        devList: (any DevListRunner)? = nil
     ) {
+        self.devList = devList ?? ShellDevListRunner(shell: shell)
         self.folderWatcher = folderWatcher
         self.loginItem = loginItem
         self.poster = poster
@@ -353,6 +357,17 @@ public actor HelperEngine {
         changed.projects[projectIndex].commands.insert(command, at: target)
         try commit(changed)
         return projectSnapshot(changed.projects[projectIndex])
+    }
+
+    // MARK: - Discovery
+
+    /// Reads the Project's folder and says what a checklist should offer to add and to remove.
+    /// It changes nothing: the user's confirmed choices come back as `addCommand` and `deleteCommand`.
+    public func discover(_ projectID: UUID) async throws -> DiscoveryPlan {
+        let folder = URL(fileURLWithPath: try findProject(projectID).folder, isDirectory: true)
+        let proposals = await Discovery.propose(folder: folder, devList: devList)
+        // The Project may have changed while `dev:list` ran.
+        return DiscoveryPlan.make(project: try findProject(projectID), proposals: proposals)
     }
 
     // MARK: - Settings

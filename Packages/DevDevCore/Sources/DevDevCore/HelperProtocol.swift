@@ -39,6 +39,9 @@ public enum HelperRequest: Codable, Sendable, Equatable {
     case deleteCommand(commandID: UUID)
     case moveCommand(commandID: UUID, toIndex: Int)
 
+    /// Runs Discovery on the Project's folder. Answered with `discovery`. Changes nothing.
+    case discover(projectID: UUID)
+
     /// The Settings the Helper stores. Answered with `settings`.
     case settings
     /// Saves the Settings and acts on them. Every client gets a `settings` event.
@@ -47,7 +50,7 @@ public enum HelperRequest: Codable, Sendable, Equatable {
     /// True for requests that change Processes or configuration. They must carry an origin.
     public var changesState: Bool {
         switch self {
-        case .hello, .snapshot, .subscribeOutput, .unsubscribeOutput, .plainOutput, .resize, .settings:
+        case .hello, .snapshot, .subscribeOutput, .unsubscribeOutput, .plainOutput, .resize, .settings, .discover:
             false
         case .start, .stop, .restart, .startAll, .stopAll, .restartAll, .stopAllAndQuit, .addProject, .renameProject,
             .removeProject, .addCommand, .updateCommand, .deleteCommand, .moveCommand, .updateSettings:
@@ -72,6 +75,7 @@ public enum HelperResponse: Codable, Sendable, Equatable {
     case project(ProjectSnapshot)
     case plainOutput(String)
     case settings(HelperSettings)
+    case discovery(DiscoveryPlan)
     case failure(HelperError)
 }
 
@@ -168,6 +172,8 @@ extension HelperEngine {
                 return .ok
             case .moveCommand(let commandID, let toIndex):
                 return .project(try await moveCommand(commandID, toIndex: toIndex))
+            case .discover(let projectID):
+                return .discovery(try await discover(projectID))
             case .settings:
                 return .settings(await settings())
             case .updateSettings(let settings):

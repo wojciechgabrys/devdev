@@ -80,6 +80,7 @@ func withHarness(
     timings: Timings = Timings(killEscalation: .seconds(3)),
     shell: Shell = .plain,
     poster: (any NotificationPoster)? = nil,
+    devList: (any DevListRunner)? = nil,
     isolation: isolated (any Actor)? = #isolation,
     _ body: (Harness) async throws -> Void
 ) async throws {
@@ -88,7 +89,8 @@ func withHarness(
     try FileManager.default.createDirectory(at: projectFolder, withIntermediateDirectories: true)
     let store = ConfigurationStore(file: folder.appendingPathComponent("configuration.json"))
     let engine = HelperEngine(
-        configuration: Configuration(), store: store, shell: shell, timings: timings, notifications: poster)
+        configuration: Configuration(), store: store, shell: shell, timings: timings, notifications: poster,
+        devList: devList)
     let project = try await engine.addProject(folder: projectFolder.path)
     var ids: [UUID] = []
     for settings in commands {

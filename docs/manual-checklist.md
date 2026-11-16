@@ -176,3 +176,25 @@ Install first with `scripts/install.sh`. Use a Project named `shop` with three C
   3. Save all open files at once in your editor. Exactly one more restart line appears.
   4. Save a file under `resources/`. Nothing restarts.
   5. Stop `Server`, then save a file under `app/`. It stays Stopped.
+
+## Phase 6: Discovery, the add-Project checklist and Rescan
+
+- [ ] **Adding a real Laravel project runs `dev:list` through your login shell and shows the checklist.**
+  1. Remove the Laravel + Vite project from Phase 2 if it is still there, then add its folder again with the + button.
+  2. Within a few seconds a sheet titled `Commands found in this Project` lists `server`, `queue`, `logs` (only with `laravel/pail` installed) and `vite`, all ticked. There is no `php artisan dev` row and no second `npm run dev` row.
+  3. Untick `logs` and click Apply. Exactly the three ticked Commands appear, in that order.
+  4. Start All. Each runs as it does from Terminal, which shows that `php` was found through your login shell.
+- [ ] **Cancel adds nothing.**
+  1. Add another Laravel folder. When the sheet appears, click Cancel. The Project is there with no Commands.
+- [ ] **A folder that is already a Project shows no checklist.**
+  1. Drag the same Laravel folder onto the window. It is selected and no sheet appears.
+- [ ] **A project with an app-registered process shows it after Rescan.**
+  1. In that project's `AppServiceProvider::boot`, add `DevCommands::artisan('horizon');` (or any `DevCommands::register`).
+  2. Click Rescan above the Commands. Under `Add these Commands` the new process is ticked. Nothing is offered for removal.
+  3. Apply, then remove that line again. Edit `queue` by hand: change its command line and save.
+  4. Add `DevCommands::withoutDefaultCommands();` and click Rescan. Under `Remove these Commands, no longer proposed`, `server`, `logs` and the process from step 2 are listed unticked. `vite` is not, since `package.json` still proposes `npm run dev`. The hand-edited `queue` is not listed. Tick `server`, click Apply: only `server` is deleted.
+- [ ] **An older Laravel falls back to the fixed list.**
+  1. Add a project on Laravel 12 or older (no `dev:list`). The sheet lists `server`, `queue`, `schedule`, then `logs`, `horizon` and `reverb` for the packages it requires.
+  2. With `laravel/horizon` required, `queue` starts unticked.
+- [ ] **A pnpm Node project proposes `pnpm run dev`.**
+  1. Add a folder with a `package.json` that has a `dev` script and a `pnpm-lock.yaml`. The sheet lists one row, `dev`, `pnpm run dev`.

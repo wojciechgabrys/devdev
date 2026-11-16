@@ -3,12 +3,15 @@ import Testing
 
 /// Loads the real `php artisan dev:list` output saved by the spike (see `docs/spike-results.md`).
 enum DevListFixture {
-    static func data(_ name: String) throws -> Data {
-        let url = try #require(
+    static func url(_ name: String) throws -> URL {
+        try #require(
             Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures/dev-list"),
             "missing fixture \(name)"
         )
-        return try Data(contentsOf: url)
+    }
+
+    static func data(_ name: String) throws -> Data {
+        try Data(contentsOf: try url(name))
     }
 }
 

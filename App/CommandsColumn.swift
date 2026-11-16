@@ -68,6 +68,13 @@ struct CommandsColumn: View {
             Button("Stop All") { Task { await model.stopAll(project.id) } }
                 .disabled(!actions.stopAll)
             Spacer()
+            if model.discoveringProjectID == project.id {
+                ProgressView()
+                    .controlSize(.small)
+            }
+            Button("Rescan") { Task { await model.rescan(project.id) } }
+                .help("Read the Project folder again and propose Commands to add or remove")
+                .disabled(model.discoveringProjectID != nil)
         }
         .padding(10)
     }

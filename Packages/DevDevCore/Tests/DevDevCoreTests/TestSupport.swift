@@ -120,8 +120,17 @@ func withHarness(
 /// Collects the events one subscriber is sent.
 actor EventLog {
     private(set) var events: [HelperEvent] = []
+    /// When each status change arrived, in the order of `statusChanges`.
+    private var statusTimes: [ContinuousClock.Instant] = []
 
-    func add(_ event: HelperEvent) { events.append(event) }
+    func add(_ event: HelperEvent) {
+        events.append(event)
+        if case .status = event { statusTimes.append(.now) }
+    }
+
+    func receivedAt(_ statusChangeIndex: Int) -> ContinuousClock.Instant? {
+        statusTimes.indices.contains(statusChangeIndex) ? statusTimes[statusChangeIndex] : nil
+    }
 
     var statusChanges: [StatusChange] {
         events.compactMap { if case .status(let change) = $0 { change } else { nil } }

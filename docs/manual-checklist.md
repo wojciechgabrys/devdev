@@ -161,3 +161,18 @@ Install first with `scripts/install.sh`. Use a Project named `shop` with three C
   1. With notifications allowed, change any line of Swift in `Helper/` and run `scripts/install.sh`.
   2. Choose Stop All and Quit in the panel, then open `/Applications/devdev.app`.
   3. Start `Fails`. Note whether the crash banner appears without a new prompt, and whether System Settings > Notifications still shows `devdevHelper` allowed.
+
+## Phase 5: auto-restart and restart when files change
+
+- [ ] **A crashing Command with auto-restart on restarts after about 1 second, and pauses after 5 crashes.**
+  1. Add a Command named `Flaky` with the command line `echo up; sleep 3; exit 1`. In its edit form turn Auto-restart on and save. Reopen the form: the switch is still on.
+  2. Click Start. After about 3 seconds one banner appears: `Flaky crashed (exit 1), auto-restarting`. About 1 second later the row reads Running again, and the output shows `── restarted HH:MM:SS ──`. No Started or Restarted banner appears.
+  3. Wait. After the fifth crash, two banners appear: `Flaky crashed (exit 1)` and `Flaky auto-restart paused after 5 crashes`. The row stays Crashed and the menubar icon shows the crash badge.
+  4. Click Start. It runs and crashes again, and auto-restart works again for 5 more crashes.
+  5. During one of the 1 second waits, click Stop. The row reads Stopped and nothing restarts.
+- [ ] **A saved file restarts a Running dev server once.**
+  1. In a Laravel project, edit the `Server` Command (`php artisan serve`). Under Restart when files change, type `app/**/*.php` and `routes/*.php` on two lines. Save, reopen the form: both lines are kept.
+  2. Start `Server`. In your editor, save a file under `app/Models/`. About half a second later the output shows one `── restarted HH:MM:SS ──` line, and one banner says `Server restarted, files changed`.
+  3. Save all open files at once in your editor. Exactly one more restart line appears.
+  4. Save a file under `resources/`. Nothing restarts.
+  5. Stop `Server`, then save a file under `app/`. It stays Stopped.

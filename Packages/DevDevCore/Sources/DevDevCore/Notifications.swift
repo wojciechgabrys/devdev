@@ -94,6 +94,8 @@ public enum NotificationTrigger: Sendable, Equatable {
     case finished(Target)
     /// `exit` is nil when the Process could not start at all.
     case crashed(Target, exit: ProcessExit?, autoRestarting: Bool)
+    /// Auto-restart stopped trying after this many crashes within the crash window.
+    case autoRestartPaused(Target, crashes: Int)
 }
 
 /// Decides which notification, if any, a trigger sends, and its text in GLOSSARY words.
@@ -126,6 +128,8 @@ public enum NotificationRule {
                 else if let signal = exit?.signal { "signal \(signal)" }
                 else { "could not start" }
             return (.crashed, target, "\(target.name) crashed (\(reason))" + (autoRestarting ? ", auto-restarting" : ""))
+        case .autoRestartPaused(let target, let crashes):
+            return (.crashed, target, "\(target.name) auto-restart paused after \(crashes) crashes")
         case .finished(let target):
             return (.stoppedOrFinished, target, "\(target.name) finished")
         case .started(let targets, let origin, let action):

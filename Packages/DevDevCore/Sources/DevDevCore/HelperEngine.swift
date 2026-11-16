@@ -18,7 +18,21 @@ public actor HelperEngine {
         /// Set by a restart while it waits for the old Process. A plain stop clears it.
         var startAfterStop = false
         var stopWaiters: [CheckedContinuation<Void, Never>] = []
+        /// When the Command crashed with auto-restart on, since its last manual start.
+        var crashTimes: [Date] = []
+        /// The auto-restart waiting for its delay. Anything that starts or stops the Command clears it.
+        var pendingAutoRestart: Int?
+        /// The latest matching file change. A restart waits until no newer one came for the settle time.
+        var pendingFileChange: Int?
     }
+
+    private struct Watch {
+        var folder: String
+        var watch: any FolderWatch
+    }
+
+    /// Crashes within the crash window after which auto-restart pauses.
+    static let crashesBeforePause = 5
 
     private struct Subscriber {
         var continuation: AsyncStream<HelperEvent>.Continuation
@@ -36,6 +50,10 @@ public actor HelperEngine {
     private var runtimes: [UUID: Runtime] = [:]
     private var subscribers: [UUID: Subscriber] = [:]
     private var runCounter = 0
+    private var waitCounter = 0
+    private let folderWatcher: FolderWatcherFactory
+    /// One per Project with a Running Command that restarts when files change.
+    private var watches: [UUID: Watch] = [:]
 
     /// What the Helper reports as its build in the hello answer.
     public nonisolated let helperVersion: String
@@ -52,8 +70,10 @@ public actor HelperEngine {
         environment: [String: String] = ProcessInfo.processInfo.environment,
         now: @escaping @Sendable () -> Date = { Date() },
         loginItem: (any LoginItem)? = nil,
-        notifications poster: (any NotificationPoster)? = nil
+        notifications poster: (any NotificationPoster)? = nil,
+        folderWatcher: @escaping FolderWatcherFactory = FSEventsFolderWatcher.factory
     ) {
+        self.folderWatcher = folderWatcher
         self.loginItem = loginItem
         self.poster = poster
         self.configuration = configuration
@@ -207,6 +227,7 @@ public actor HelperEngine {
     /// Stops every Process of every Project.
     public func stopEverything(origin: Origin) async {
         let ids = configuration.projects.flatMap(\.commands).map(\.id)
+        for id in ids { runtimes[id]?.pendingAutoRestart = nil }
         await haltAll(ids.filter { runtimes[$0]?.process != nil }, origin: origin, cause: .stopped, action: nil)
     }
 
@@ -407,6 +428,9 @@ public actor HelperEngine {
             size: runtime.size)
 
         runtime.restartToApply = false
+        runtime.pendingAutoRestart = nil
+        runtime.pendingFileChange = nil
+        if !origin.isInternal { runtime.crashTimes = [] }
         runtime.stopRequested = false
         runtime.startAfterStop = false
         runtime.lastExit = nil
@@ -420,6 +444,7 @@ public actor HelperEngine {
             runtime.startedAt = time
             runtimes[commandID] = runtime
             emitStatus(commandID, cause: cause, origin: origin, action: action)
+            refreshWatches()
             Task { [weak self] in
                 for await event in process.events {
                     await self?.handle(event, of: commandID, run: run)
@@ -430,7 +455,7 @@ public actor HelperEngine {
             runtimes[commandID] = runtime
             write(banner: OutputBanner.couldNotStart("\(error)"), to: commandID)
             emitStatus(commandID, cause: .crashed, origin: origin, action: action)
-            notify(commandID) { .crashed($0, exit: nil, autoRestarting: false) }
+            crashed(commandID, exit: nil)
         }
         return try commandSnapshot(commandID)
     }
@@ -450,6 +475,7 @@ public actor HelperEngine {
             runtime.stopWaiters = []
             runtimes[commandID] = runtime
             write(banner: requested ? OutputBanner.stopped : OutputBanner.ended(exit), to: commandID)
+            refreshWatches()
             if requested {
                 emitStatus(
                     commandID, cause: runtime.stopCause, origin: runtime.stopOrigin, action: runtime.stopAction)
@@ -459,7 +485,7 @@ public actor HelperEngine {
                 if runtime.status == .finished {
                     notify(commandID) { .finished($0) }
                 } else {
-                    notify(commandID) { .crashed($0, exit: exit, autoRestarting: false) }
+                    crashed(commandID, exit: exit)
                 }
             }
             waiters.forEach { $0.resume() }
@@ -470,6 +496,7 @@ public actor HelperEngine {
     /// Command becomes Stopped.
     private func halt(_ commandID: UUID, origin: Origin, cause: StatusCause, action: ProjectAction?) async {
         guard var runtime = runtimes[commandID] else { return }
+        if cause == .stopped { runtime.pendingAutoRestart = nil }
         if let process = runtime.process {
             if cause == .stopped { runtime.startAfterStop = false }
             if !runtime.stopRequested {
@@ -492,6 +519,8 @@ public actor HelperEngine {
             runtime.status = .stopped
             runtimes[commandID] = runtime
             emitStatus(commandID, cause: .cleared, origin: origin, action: action)
+        } else {
+            runtimes[commandID] = runtime
         }
     }
 
@@ -505,9 +534,115 @@ public actor HelperEngine {
 
     private func forget(_ commandID: UUID) {
         runtimes[commandID] = nil
+        refreshWatches()
         for key in subscribers.keys {
             subscribers[key]?.outputOf.remove(commandID)
         }
+    }
+
+    // MARK: - Auto-restart
+
+    /// A crash notifies. With auto-restart on, it also restarts the Command after the delay, unless
+    /// this is the fifth crash within the crash window: then auto-restart pauses until a manual start.
+    private func crashed(_ commandID: UUID, exit: ProcessExit?) {
+        guard let (_, command) = try? find(commandID), command.settings.autoRestart else {
+            notify(commandID) { .crashed($0, exit: exit, autoRestarting: false) }
+            return
+        }
+        let time = now()
+        let window = timings.crashWindow.timeInterval
+        var times = (runtimes[commandID]?.crashTimes ?? []).filter { time.timeIntervalSince($0) < window }
+        times.append(time)
+        runtimes[commandID]?.crashTimes = times
+        guard times.count < Self.crashesBeforePause else {
+            notify(commandID) { .crashed($0, exit: exit, autoRestarting: false) }
+            notify(commandID) { .autoRestartPaused($0, crashes: times.count) }
+            return
+        }
+        notify(commandID) { .crashed($0, exit: exit, autoRestarting: true) }
+
+        waitCounter += 1
+        let wait = waitCounter
+        runtimes[commandID]?.pendingAutoRestart = wait
+        let delay = timings.autoRestartDelay
+        Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            await self?.autoRestart(commandID, wait: wait)
+        }
+    }
+
+    /// Only a Command still Crashed, with its switch still on, and no start or stop since the crash.
+    private func autoRestart(_ commandID: UUID, wait: Int) {
+        guard let runtime = runtimes[commandID], runtime.pendingAutoRestart == wait,
+            runtime.process == nil, runtime.status == .crashed,
+            (try? find(commandID))?.command.settings.autoRestart == true
+        else { return }
+        runtimes[commandID]?.pendingAutoRestart = nil
+        // The crash notification already said it is auto-restarting: no Restarted notification.
+        _ = try? launch(commandID, origin: .autoRestart, cause: .restarted, action: nil)
+    }
+
+    // MARK: - Restart when files change
+
+    /// Files changed at these absolute paths. Every Running Command with a matching glob restarts once
+    /// the changes have been quiet for the settle time. A Command that is not Running is left alone.
+    public func filesChanged(_ paths: [String]) {
+        for project in configuration.projects {
+            let folders = Set([project.folder, Self.realPath(project.folder)])
+            let relative = paths.compactMap { path in
+                folders.lazy.compactMap { Glob.relativePath(path, inFolder: $0) }.first
+            }
+            guard !relative.isEmpty else { continue }
+            for command in project.commands
+            where isRunning(command.id) && !command.settings.restartWhenFilesChange.isEmpty {
+                let globs = command.settings.restartWhenFilesChange.map(Glob.init)
+                if relative.contains(where: { path in globs.contains { $0.matches(path) } }) {
+                    scheduleFileChangeRestart(command.id)
+                }
+            }
+        }
+    }
+
+    private func scheduleFileChangeRestart(_ commandID: UUID) {
+        waitCounter += 1
+        let wait = waitCounter
+        runtimes[commandID]?.pendingFileChange = wait
+        let settle = timings.fileChangeSettle
+        Task { [weak self] in
+            try? await Task.sleep(for: settle)
+            await self?.fileChangeSettled(commandID, wait: wait)
+        }
+    }
+
+    private func fileChangeSettled(_ commandID: UUID, wait: Int) async {
+        guard runtimes[commandID]?.pendingFileChange == wait, isRunning(commandID) else { return }
+        runtimes[commandID]?.pendingFileChange = nil
+        _ = try? await restart(commandID, origin: .fileChange)
+    }
+
+    /// Watches each Project folder while one of its Commands is Running with globs set.
+    private func refreshWatches() {
+        var wanted: [UUID: String] = [:]
+        for project in configuration.projects
+        where project.commands.contains(where: { isRunning($0.id) && !$0.settings.restartWhenFilesChange.isEmpty }) {
+            wanted[project.id] = project.folder
+        }
+        for (id, watch) in watches where wanted[id] != watch.folder {
+            watch.watch.stop()
+            watches[id] = nil
+        }
+        for (id, folder) in wanted where watches[id] == nil {
+            let watch = folderWatcher(folder) { [weak self] paths in
+                Task { await self?.filesChanged(paths) }
+            }
+            if let watch { watches[id] = Watch(folder: folder, watch: watch) }
+        }
+    }
+
+    private static func realPath(_ path: String) -> String {
+        guard let resolved = realpath(path, nil) else { return path }
+        defer { free(resolved) }
+        return String(cString: resolved)
     }
 
     // MARK: - Output
@@ -597,6 +732,7 @@ public actor HelperEngine {
         }
         configuration = changed
         emit(.configuration(snapshot()))
+        refreshWatches()
     }
 
     private func validated(_ settings: CommandSettings, in project: Project, except: UUID?) throws -> CommandSettings {

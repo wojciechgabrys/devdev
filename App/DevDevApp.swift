@@ -12,13 +12,16 @@ struct DevDevApp: App {
         // One window. Closing it quits the App; the Helper and its Processes carry on.
         Window("devdev", id: "main") {
             MainWindow(model: model)
-                .frame(minWidth: 900, minHeight: 480)
+                .frame(minWidth: 900, minHeight: 520)
                 // A Command's name in the menubar panel, or a notification: show its output.
                 .onOpenURL { url in
                     guard let link = OpenLink(url: url, flavor: BuildFlavor.current()) else { return }
                     Task { await model.open(link) }
                 }
         }
+        // Graphite draws its own title strip under the window buttons.
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 1180, height: 760)
         .handlesExternalEvents(matching: [BuildFlavor.current().urlScheme])
         .commands {
             CommandGroup(replacing: .appTermination) {

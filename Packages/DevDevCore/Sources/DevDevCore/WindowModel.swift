@@ -211,6 +211,18 @@ public final class WindowModel {
         await watchSelectedCommand()
     }
 
+    /// Shows a Command's output in its tab, from whichever Project it belongs to.
+    /// Used by the project tree, the tabs and Go to Command.
+    public func show(command id: UUID) async {
+        state.select(tab: id)
+        await watchSelectedCommand()
+    }
+
+    public func closeTab(_ id: UUID) async {
+        state.closeTab(id)
+        await watchSelectedCommand()
+    }
+
     /// A link from the menubar panel or a notification: shows that Command's output.
     public func open(_ link: OpenLink) async {
         state.open(link)

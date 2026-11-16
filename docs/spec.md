@@ -178,11 +178,14 @@ Show a checklist with two groups: Commands that Discovery proposes and the Proje
 
 ## 7. Main window (the App)
 
-Three columns:
+The Graphite look: a dark pro-tool window, with a matching light palette when macOS is in Light Mode. Chosen from five prototypes (branch `prototype/ui-redesign`).
 
-1. **Projects** — sidebar. Each row: name and a status indicator for the Project status. Add / remove Project.
-2. **Commands** of the selected Project. Each row: name, command line, status, and Start / Restart / Stop buttons. Above the list: Start All, Restart All, Stop All, Rescan. Add, edit, delete, reorder Commands. Editing is a form with the fields from section 4.
-3. **Output** of the selected Command (section 5), with its status and exit code when there is one.
+1. **Title strip** — the selected Command and its Project, and a **Go to Command** field (Cmd-K): type part of a Command's or Project's name, pick with the arrows, press Return.
+2. **Project tree** — every Project as a folder you expand into its Commands. A Project row shows its name and how many Commands run; hovering shows Start All / Restart All / Stop All. A Command row shows its status, name, and how long it has run or how it ended. Context menus hold add, edit, delete, reorder (Move Up / Move Down), Rescan, Show in Finder and Remove Project. Editing is a form with the fields from section 4.
+3. **Output tabs** — each opened Command gets a tab, from any Project. Closing the selected tab selects its right neighbour, else its left. Cmd-Shift-[ and ] move between tabs.
+4. **Command bar** — the Command's Project and name, status with exit code when there is one, command line, restart-to-apply, auto-restart and file-watch hints, Start / Restart / Stop, and a menu with the rest.
+5. **Output** of the selected Command (section 5).
+6. **Status bar** — how many Commands run and crashed, the Helper link, and how long the selected Command has run.
 
 Behaviour:
 
@@ -202,10 +205,10 @@ Behaviour:
 
 ## 8. Menubar panel (the Helper)
 
-Modelled on F-Bar: a list you expand.
+Modelled on F-Bar: a list you expand, in the Graphite look. A filter field at the top narrows it to matching Commands, or to whole Projects whose name matches.
 
 - Each Project is a row with name, status indicator, and Start All / Restart All / Stop All.
-- Expanding a Project shows its Commands, each with status and Start / Restart / Stop.
+- Expanding a Project shows its Commands, each with status, how long it has run or how it ended, and Start / Restart / Stop on hover.
 - At the bottom: **Open devdev** (launches or focuses the App), **Stop All and Quit**.
 - No output in the panel. Clicking a Command's name opens the App on that Command's output.
 - The menubar icon shows a badge while any Command is Crashed.

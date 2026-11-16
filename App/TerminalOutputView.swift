@@ -8,6 +8,7 @@ import SwiftUI
 struct TerminalOutputView: NSViewRepresentable {
     let session: OutputSession
     let onResize: (_ columns: Int, _ rows: Int) -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     func makeCoordinator() -> Coordinator {
         Coordinator(session: session, onResize: onResize)
@@ -21,6 +22,9 @@ struct TerminalOutputView: NSViewRepresentable {
         view.allowMouseReporting = false
         // No caret: there is nothing to type into.
         view.caretColor = .clear
+        view.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        Self.applyTheme(dark: colorScheme == .dark, to: view)
+        context.coordinator.isDark = colorScheme == .dark
         session.attach { [weak view] data in
             view?.feed(byteArray: [UInt8](data)[...])
         }
@@ -29,6 +33,28 @@ struct TerminalOutputView: NSViewRepresentable {
 
     func updateNSView(_ view: TerminalView, context: Context) {
         context.coordinator.onResize = onResize
+        let isDark = colorScheme == .dark
+        if context.coordinator.isDark != isDark {
+            context.coordinator.isDark = isDark
+            Self.applyTheme(dark: isDark, to: view)
+        }
+    }
+
+    /// The Graphite terminal colours for the current appearance.
+    private static func applyTheme(dark: Bool, to view: TerminalView) {
+        let colors = Graphite.terminalColors(dark: dark)
+        view.nativeBackgroundColor = colors.background
+        view.nativeForegroundColor = colors.foreground
+        view.selectedTextBackgroundColor = colors.selection
+        view.layer?.backgroundColor = colors.background.cgColor
+        view.installColors(colors.ansi.map(Self.terminalColor))
+    }
+
+    private static func terminalColor(_ color: NSColor) -> SwiftTerm.Color {
+        let rgb = color.usingColorSpace(.sRGB) ?? color
+        return SwiftTerm.Color(
+            red8: UInt16(rgb.redComponent * 255), green8: UInt16(rgb.greenComponent * 255),
+            blue8: UInt16(rgb.blueComponent * 255))
     }
 
     static func dismantleNSView(_ view: TerminalView, coordinator: Coordinator) {
@@ -39,6 +65,7 @@ struct TerminalOutputView: NSViewRepresentable {
     final class Coordinator: NSObject, TerminalViewDelegate {
         let session: OutputSession
         var onResize: (Int, Int) -> Void
+        var isDark: Bool?
 
         init(session: OutputSession, onResize: @escaping (Int, Int) -> Void) {
             self.session = session

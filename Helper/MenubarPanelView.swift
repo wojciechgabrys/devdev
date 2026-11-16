@@ -1,184 +1,242 @@
 import DevDevCore
 import SwiftUI
 
-/// The panel under the menubar icon: Projects you expand into Commands. No output.
-/// Rows, statuses and which buttons work come from `MenubarPanel`.
+/// The panel under the menubar icon, in the Graphite look: a filter field, then each Project with its
+/// Commands. No output. Rows, statuses, filtering and which buttons work come from `MenubarPanel`.
 struct MenubarPanelView: View {
     let model: MenubarModel
     let opener: AppOpener
     let close: () -> Void
-    @State private var expanded: Set<UUID> = []
+    @State private var collapsed: Set<UUID> = []
+    @State private var filter = ""
+    @FocusState private var isFilterFocused: Bool
 
     var body: some View {
+        let panel = model.panel.filtered(by: filter)
         VStack(alignment: .leading, spacing: 0) {
+            filterField
             if model.panel.rows.isEmpty {
                 Text("No Projects yet. Add one in devdev.")
-                    .foregroundStyle(.secondary)
-                    .padding(12)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Graphite.secondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+            } else if panel.rows.isEmpty {
+                Text("No Command matches “\(filter)”")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Graphite.secondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(model.panel.rows) { row in
-                            projectRow(row)
-                            if expanded.contains(row.id) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        ForEach(panel.rows) { row in
+                            // While filtering every match shows, so nothing hides behind a collapsed row.
+                            let isOpen = !filter.isEmpty || !collapsed.contains(row.id)
+                            projectHeader(row, isOpen: isOpen)
+                            if isOpen {
                                 ForEach(row.commands) { command in
-                                    commandRow(command)
+                                    CommandRow(command: command, model: model) {
+                                        close()
+                                        opener.open(.command(command.id))
+                                    }
                                 }
                             }
                         }
                     }
-                    .padding(8)
+                    .padding(.bottom, 6)
                 }
-                .frame(maxHeight: 420)
+                .scrollIndicators(.never)
+                .frame(maxHeight: 440)
             }
-            Divider()
-            VStack(alignment: .leading, spacing: 2) {
-                PanelMenuButton(title: "Open devdev") {
+            Rectangle().fill(Graphite.line).frame(height: 1)
+            VStack(spacing: 1) {
+                FooterItem(title: "Open devdev", shortcut: "⌘O") {
                     close()
                     opener.openApp()
                 }
-                PanelMenuButton(title: "Stop All and Quit") {
+                .keyboardShortcut("o", modifiers: .command)
+                FooterItem(title: "Stop All and Quit", shortcut: "⌥⌘Q") {
                     close()
                     Task { await model.stopAllAndQuit() }
                 }
+                .keyboardShortcut("q", modifiers: [.command, .option])
             }
             .padding(6)
         }
         .frame(width: 340)
         .fixedSize(horizontal: false, vertical: true)
+        .background(Graphite.chrome)
+        .foregroundStyle(Graphite.text)
+        .onAppear { isFilterFocused = true }
     }
 
-    private func projectRow(_ row: MenubarPanel.ProjectRow) -> some View {
+    private var filterField: some View {
         HStack(spacing: 8) {
-            Button {
-                if expanded.contains(row.id) { expanded.remove(row.id) } else { expanded.insert(row.id) }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: expanded.contains(row.id) ? "chevron.down" : "chevron.right")
-                        .font(.caption)
-                        .frame(width: 10)
-                    PanelDot(color: row.status.panelColor)
-                    Text(row.name)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text(row.statusLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Graphite.secondary)
+            TextField("Filter Commands", text: $filter)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12.5))
+                .focused($isFilterFocused)
+                .onKeyPress(.escape) {
+                    if filter.isEmpty { close() } else { filter = "" }
+                    return .handled
                 }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            ActionButton(symbol: "play.fill", help: "Start All", enabled: row.actions.startAll) {
-                await model.startAll(row.id)
-            }
-            ActionButton(symbol: "arrow.clockwise", help: "Restart All", enabled: row.actions.restartAll) {
-                await model.restartAll(row.id)
-            }
-            ActionButton(symbol: "stop.fill", help: "Stop All", enabled: row.actions.stopAll) {
-                await model.stopAll(row.id)
+            Spacer(minLength: 4)
+            Text("\(model.panel.runningCount) running")
+                .font(.system(size: 10.5))
+                .foregroundStyle(Graphite.tertiary)
+            if model.panel.crashedCount > 0 {
+                Text("\(model.panel.crashedCount) crashed")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(Graphite.red)
             }
         }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 9)
+        .frame(height: 28)
+        .background(RoundedRectangle(cornerRadius: 7).fill(Graphite.raised))
+        .padding(.horizontal, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 4)
     }
 
-    private func commandRow(_ command: MenubarPanel.CommandRow) -> some View {
-        HStack(spacing: 8) {
-            PanelDot(color: command.status.panelColor)
-            Button {
-                close()
-                opener.open(.command(command.id))
-            } label: {
-                Text(command.name)
-                    .lineLimit(1)
-            }
-            .buttonStyle(.link)
-            .help("Show the output in devdev")
-            Spacer(minLength: 4)
-            Text(command.statusText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-            ActionButton(symbol: "play.fill", help: "Start", enabled: command.actions.start) {
-                await model.start(command.id)
-            }
-            ActionButton(symbol: "arrow.clockwise", help: "Restart", enabled: command.actions.restart) {
-                await model.restart(command.id)
-            }
-            ActionButton(symbol: "stop.fill", help: "Stop", enabled: command.actions.stop) {
-                await model.stop(command.id)
-            }
+    private func projectHeader(_ row: MenubarPanel.ProjectRow, isOpen: Bool) -> some View {
+        ProjectHeader(row: row, isOpen: isOpen, model: model) {
+            if collapsed.contains(row.id) { collapsed.remove(row.id) } else { collapsed.insert(row.id) }
         }
-        .padding(.vertical, 3)
-        .padding(.leading, 28)
-        .padding(.trailing, 4)
     }
 }
 
-private struct ActionButton: View {
-    let symbol: String
-    let help: String
-    let enabled: Bool
-    let action: () async -> Void
+/// A Project's name as a small heading. Hovering shows its "All" buttons.
+private struct ProjectHeader: View {
+    let row: MenubarPanel.ProjectRow
+    let isOpen: Bool
+    let model: MenubarModel
+    let toggle: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
-        Button {
-            Task { await action() }
-        } label: {
-            Image(systemName: symbol)
-                .frame(width: 16, height: 16)
+        HStack(spacing: 6) {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 8, weight: .bold))
+                .foregroundStyle(Graphite.tertiary)
+                .rotationEffect(.degrees(isOpen ? 90 : 0))
+                .frame(width: 10)
+            if row.status == .crashed {
+                StatusGlyph(row.status)
+            }
+            Text(row.name.uppercased())
+                .font(Graphite.sectionLabel)
+                .kerning(0.7)
+                .foregroundStyle(row.status == .crashed ? Graphite.red : Graphite.tertiary)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            HStack(spacing: 0) {
+                GraphiteIconButton("play.fill", help: "Start All", size: 20) {
+                    Task { await model.startAll(row.id) }
+                }
+                .disabled(!row.actions.startAll)
+                GraphiteIconButton("arrow.clockwise", help: "Restart All", size: 20) {
+                    Task { await model.restartAll(row.id) }
+                }
+                .disabled(!row.actions.restartAll)
+                GraphiteIconButton("stop.fill", help: "Stop All", size: 20) {
+                    Task { await model.stopAll(row.id) }
+                }
+                .disabled(!row.actions.stopAll)
+            }
+            .opacity(isHovering ? 1 : 0)
         }
-        .buttonStyle(.borderless)
-        .disabled(!enabled)
-        .help(help)
+        .padding(.leading, 10)
+        .padding(.trailing, 8)
+        .padding(.top, 8)
+        .frame(height: 30)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: toggle)
+        .onHover { isHovering = $0 }
+        .help(row.statusLabel)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(row.name), \(row.statusLabel)")
     }
 }
 
-private struct PanelMenuButton: View {
+/// One Command: status, name, and how long it ran or how it ended. Hovering shows its buttons.
+/// Clicking the name opens the App on its output.
+private struct CommandRow: View {
+    let command: MenubarPanel.CommandRow
+    let model: MenubarModel
+    let open: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 9) {
+            StatusGlyph(command.status)
+            Text(command.name)
+                .font(.system(size: 12.5))
+                .foregroundStyle(Graphite.strong)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if isHovering {
+                HStack(spacing: 0) {
+                    GraphiteIconButton("play.fill", help: "Start", size: 20) {
+                        Task { await model.start(command.id) }
+                    }
+                    .disabled(!command.actions.start)
+                    GraphiteIconButton("arrow.clockwise", help: "Restart", size: 20) {
+                        Task { await model.restart(command.id) }
+                    }
+                    .disabled(!command.actions.restart)
+                    GraphiteIconButton("stop.fill", help: "Stop", size: 20) {
+                        Task { await model.stop(command.id) }
+                    }
+                    .disabled(!command.actions.stop)
+                }
+            } else {
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    Text(command.detail(now: context.date))
+                        .font(Graphite.monoSmall)
+                        .foregroundStyle(command.status == .crashed ? Graphite.red : Graphite.tertiary)
+                }
+            }
+        }
+        .padding(.leading, 26)
+        .padding(.trailing, 8)
+        .frame(height: 28)
+        .background(RoundedRectangle(cornerRadius: 6).fill(isHovering ? Graphite.hover : .clear))
+        .padding(.horizontal, 6)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: open)
+        .onHover { isHovering = $0 }
+        .help("\(command.statusText). Click to show the output in devdev.")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(command.name), \(command.statusText)")
+    }
+}
+
+private struct FooterItem: View {
     let title: String
+    let shortcut: String
     let action: () -> Void
+    @State private var isHovering = false
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .contentShape(Rectangle())
+            HStack {
+                Text(title)
+                Spacer()
+                Text(shortcut)
+                    .foregroundStyle(isHovering ? .white.opacity(0.8) : Graphite.tertiary)
+            }
+            .font(.system(size: 12.5))
+            .foregroundStyle(isHovering ? .white : Graphite.text)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .background(RoundedRectangle(cornerRadius: 6).fill(isHovering ? Graphite.accent : .clear))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct PanelDot: View {
-    let color: Color
-
-    var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: 8, height: 8)
-    }
-}
-
-extension CommandStatus {
-    var panelColor: Color {
-        switch self {
-        case .stopped: .secondary
-        case .running: .green
-        case .finished: .blue
-        case .crashed: .red
-        }
-    }
-}
-
-extension ProjectStatus {
-    var panelColor: Color {
-        switch self {
-        case .stopped: .secondary
-        case .running: .green
-        case .partlyRunning: .orange
-        case .crashed: .red
-        }
+        .onHover { isHovering = $0 }
     }
 }

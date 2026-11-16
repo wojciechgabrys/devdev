@@ -75,6 +75,9 @@ public struct WindowState: Sendable, Equatable {
     public private(set) var snapshot = HelperSnapshot(projects: [])
     public private(set) var selectedProjectID: UUID?
     public private(set) var selectedCommandID: UUID?
+    /// The output tabs, left to right. The selected Command always has one. Tabs may hold
+    /// Commands of other Projects; selecting such a tab selects its Project too.
+    public private(set) var tabs: [UUID] = []
     /// A link that arrived before the Helper's state did. Applied once it arrives.
     private var pendingLink: OpenLink?
 
@@ -206,6 +209,44 @@ public struct WindowState: Sendable, Equatable {
             }
             selectedProjectID = command.projectID
             selectedCommandID = command.id
+            openTab(command.id)
+        }
+    }
+
+    /// Shows a tab's Command, from whichever Project it belongs to.
+    public mutating func select(tab id: UUID) {
+        open(.command(id))
+    }
+
+    /// Closes a tab. Closing the selected one selects the tab to its right, else the one to its left.
+    /// Closing the last tab leaves no Command selected until the user picks one.
+    public mutating func closeTab(_ id: UUID) {
+        guard let index = tabs.firstIndex(of: id) else { return }
+        tabs.remove(at: index)
+        guard id == selectedCommandID else { return }
+        if tabs.isEmpty {
+            selectedCommandID = nil
+        } else {
+            open(.command(tabs[min(index, tabs.count - 1)]))
+        }
+    }
+
+    private mutating func openTab(_ id: UUID) {
+        if !tabs.contains(id) { tabs.append(id) }
+    }
+
+    /// The Helper connection in a few words, for the status bar.
+    public var linkLabel: String {
+        switch link {
+        case .connecting: "Connecting to the Helper…"
+        case .died: "Helper stopped"
+        case .unavailable: "Helper unavailable"
+        case .connected:
+            switch compatibility {
+            case .current: "Helper connected"
+            case .outdated: "Helper outdated"
+            case .incompatible: "Helper incompatible"
+            }
         }
     }
 
@@ -216,12 +257,14 @@ public struct WindowState: Sendable, Equatable {
 
     /// Keeps the selection on things that exist: the first Project, and the first Command of the Project.
     private mutating func repairSelection() {
+        tabs.removeAll { snapshot.command($0) == nil }
         if selectedProject == nil {
             selectedProjectID = snapshot.projects.first?.id
         }
         if selectedCommand == nil {
             selectedCommandID = selectedProject?.commands.first?.id
         }
+        if let selectedCommandID { openTab(selectedCommandID) }
     }
 }
 

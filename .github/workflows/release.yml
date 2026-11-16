@@ -1,0 +1,77 @@
+name: Release
+
+# Push a tag such as v0.1.0 to build devdev.app and attach it as a DMG to a GitHub release.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      DERIVED_DATA: ${{ github.workspace }}/.build/release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show the toolchain
+        run: |
+          xcodebuild -version
+          sw_vers
+
+      - name: Check the tag matches the app version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          core_version=$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Packages/DevDevCore/Sources/DevDevCore/DevDevCore.swift)
+          marketing_versions=$(grep -o 'MARKETING_VERSION = [^;]*' devdev.xcodeproj/project.pbxproj | sed 's/MARKETING_VERSION = //' | sort -u)
+          echo "Tag: $tag_version  DevDevCore.version: $core_version  MARKETING_VERSION: $marketing_versions"
+          if [ "$core_version" != "$tag_version" ] || [ "$marketing_versions" != "$tag_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match DevDevCore.version ($core_version) and MARKETING_VERSION ($marketing_versions)."
+            exit 1
+          fi
+          echo "VERSION=$tag_version" >> "$GITHUB_ENV"
+
+      # SwiftTerm's build plug-in must be trusted before xcodebuild runs it. On a Mac a person clicks
+      # Trust & Enable once. Here the same trust is written for the pinned SwiftTerm revision only,
+      # so a SwiftTerm bump fails this job until the fingerprint below is updated on purpose.
+      - name: Trust the SwiftTerm build plug-in
+        run: |
+          mkdir -p ~/Library/org.swift.swiftpm/security
+          cat > ~/Library/org.swift.swiftpm/security/plugins.json <<'JSON'
+          [
+            {
+              "fingerprint" : "282c3c3a932b55c129628876b70f37d993af1615",
+              "packageIdentity" : "swiftterm",
+              "targetName" : "SwiftTermBuildInfoPlugin"
+            }
+          ]
+          JSON
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -project devdev.xcodeproj -scheme devdev \
+            -derivedDataPath "$DERIVED_DATA" -resolvePackageDependencies
+
+      - name: Build Release
+        run: |
+          xcodebuild -project devdev.xcodeproj -scheme devdev -configuration Release \
+            -destination platform=macOS -derivedDataPath "$DERIVED_DATA" build
+
+      - name: Make the DMG
+        run: |
+          scripts/make-dmg.sh "$DERIVED_DATA/Build/Products/Release/devdev.app" "devdev-$VERSION.dmg"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "devdev-$VERSION.dmg" \
+            --title "devdev $VERSION" --generate-notes --verify-tag

@@ -9,8 +9,8 @@
 /* Begin PBXBuildFile section */
 		DD0000000000000000000001 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000002 /* DevDevCore */; };
 		DD0000000000000000000023 /* DevDevCore in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000024 /* DevDevCore */; };
-		DD0000000000000000000030 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000031 /* SwiftTerm */; };
 		DD000000000000000000002C /* devdevHelper.app in Embed Helper */ = {isa = PBXBuildFile; fileRef = DD0000000000000000000020 /* devdevHelper.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		DD0000000000000000000030 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = DD0000000000000000000031 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,8 +39,8 @@
 
 /* Begin PBXFileReference section */
 		DD0000000000000000000003 /* devdev.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdev.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		DD0000000000000000000020 /* devdevHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdevHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0000000000000000000013 /* DevDevCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = DevDevCore; path = Packages/DevDevCore; sourceTree = "<group>"; };
+		DD0000000000000000000020 /* devdevHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = devdevHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -275,9 +275,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVDEV_URL_SCHEME = "devdev-debug";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/App-Info.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -297,9 +299,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVDEV_URL_SCHEME = devdev;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/App-Info.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

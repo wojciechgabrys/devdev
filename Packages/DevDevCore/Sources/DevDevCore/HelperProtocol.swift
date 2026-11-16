@@ -39,13 +39,18 @@ public enum HelperRequest: Codable, Sendable, Equatable {
     case deleteCommand(commandID: UUID)
     case moveCommand(commandID: UUID, toIndex: Int)
 
+    /// The Settings the Helper stores. Answered with `settings`.
+    case settings
+    /// Saves the Settings and acts on them. Every client gets a `settings` event.
+    case updateSettings(HelperSettings)
+
     /// True for requests that change Processes or configuration. They must carry an origin.
     public var changesState: Bool {
         switch self {
-        case .hello, .snapshot, .subscribeOutput, .unsubscribeOutput, .plainOutput, .resize:
+        case .hello, .snapshot, .subscribeOutput, .unsubscribeOutput, .plainOutput, .resize, .settings:
             false
         case .start, .stop, .restart, .startAll, .stopAll, .restartAll, .stopAllAndQuit, .addProject, .renameProject,
-            .removeProject, .addCommand, .updateCommand, .deleteCommand, .moveCommand:
+            .removeProject, .addCommand, .updateCommand, .deleteCommand, .moveCommand, .updateSettings:
             true
         }
     }
@@ -66,6 +71,7 @@ public enum HelperResponse: Codable, Sendable, Equatable {
     case command(CommandSnapshot)
     case project(ProjectSnapshot)
     case plainOutput(String)
+    case settings(HelperSettings)
     case failure(HelperError)
 }
 
@@ -162,6 +168,10 @@ extension HelperEngine {
                 return .ok
             case .moveCommand(let commandID, let toIndex):
                 return .project(try await moveCommand(commandID, toIndex: toIndex))
+            case .settings:
+                return .settings(await settings())
+            case .updateSettings(let settings):
+                return .settings(try await updateSettings(settings))
             }
         } catch let error as HelperError {
             return .failure(error)

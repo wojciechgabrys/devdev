@@ -79,6 +79,7 @@ func withHarness(
     _ commands: [CommandSettings],
     timings: Timings = Timings(killEscalation: .seconds(3)),
     shell: Shell = .plain,
+    isolation: isolated (any Actor)? = #isolation,
     _ body: (Harness) async throws -> Void
 ) async throws {
     let folder = try makeTemporaryFolder()
@@ -108,6 +109,7 @@ func withHarness(
 func withHarness(
     _ commandLine: String,
     timings: Timings = Timings(killEscalation: .seconds(3)),
+    isolation: isolated (any Actor)? = #isolation,
     _ body: (Harness) async throws -> Void
 ) async throws {
     try await withHarness([CommandSettings(name: "Main", commandLine: commandLine)], timings: timings, body)

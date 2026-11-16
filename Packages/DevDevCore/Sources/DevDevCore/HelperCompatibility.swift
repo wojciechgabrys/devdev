@@ -57,6 +57,12 @@ public struct HelperLocation: Sendable, Equatable {
         return app.appendingPathComponent("Contents/Helpers/devdevHelper.app", isDirectory: true)
     }
 
+    /// The App bundle a Helper bundle sits in: `<App>.app/Contents/Helpers/devdevHelper.app`.
+    public static func app(containingHelper helperBundle: URL) -> URL {
+        helperBundle.standardizedFileURL
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    }
+
     public var helperExecutable: URL {
         helperBundle.appendingPathComponent("Contents/MacOS/devdevHelper", isDirectory: false)
     }

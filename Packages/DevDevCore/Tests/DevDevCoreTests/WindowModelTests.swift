@@ -345,4 +345,52 @@ final class HelperStandIn: @unchecked Sendable {
             #expect(helper.launches == 0)
         }
     }
+
+    @Test func theSettingsWindowShowsTheHelpersSettingsAndSavesASwitchThroughTheHelper() async throws {
+        try await withStandIn { helper in
+            let model = helper.makeModel()
+            await model.connect()
+            #expect(model.settings == HelperSettings(showMenubarIcon: true, launchAtLogin: false))
+
+            await model.setShowMenubarIcon(false)
+
+            #expect(model.settings?.showMenubarIcon == false)
+            let engine = try #require(helper.running).engine
+            #expect(await engine.settings().showMenubarIcon == false)
+            #expect(model.errorMessage == nil)
+        }
+    }
+
+    @Test func aSettingChangedByAnotherClientReachesTheSettingsWindow() async throws {
+        try await withStandIn { helper in
+            let model = helper.makeModel()
+            await model.connect()
+            let engine = try #require(helper.running).engine
+
+            try await engine.updateSettings(HelperSettings(showMenubarIcon: false, launchAtLogin: false))
+
+            try await waitUntil("the window shows the icon off") { model.settings?.showMenubarIcon == false }
+        }
+    }
+
+    @Test func anOpenLinkShowsThatCommandsOutput() async throws {
+        try await withStandIn { helper in
+            let (model, first) = try await modelWithCommand(helper, "echo first; \(Script.runsForever)")
+            let projectID = try #require(model.state.selectedProject?.id)
+            var draft = CommandDraft()
+            draft.name = "Second"
+            draft.commandLine = "echo second; \(Script.runsForever)"
+            let added = await model.addCommand(to: projectID, draft: draft)
+            #expect(added)
+            try await waitUntil("both Commands show") { model.state.selectedProject?.commands.count == 2 }
+            await model.select(command: first)
+            let second = try #require(model.state.selectedProject?.commands.last?.id)
+            #expect(second != first)
+
+            await model.open(.command(second))
+
+            #expect(model.state.selectedCommandID == second)
+            try await waitUntil("the output of the second Command arrives") { model.output?.commandID == second }
+        }
+    }
 }

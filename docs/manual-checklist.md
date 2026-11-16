@@ -74,4 +74,56 @@ SwiftTerm's build plug-in must be trusted once per Mac in Xcode before any build
   2. The Debug window shows none of the installed app's Projects. Activity Monitor shows two `devdevHelper` processes.
   3. Choose Stop All and Quit in the Debug app. The installed app's Command still reads Running.
 - [ ] **The Settings window opens.**
-  1. Press <kbd>Cmd</kbd> + <kbd>,</kbd>. A Settings window opens. It is empty until later phases.
+  1. Press <kbd>Cmd</kbd> + <kbd>,</kbd>. A Settings window opens. Phase 3 adds its first two switches.
+
+## Phase 3: menubar panel
+
+Run every check here with the App closed, unless a step says to open it. Install first with `scripts/install.sh`, and use a Project with two Commands: `Vite` (`npm run dev`) and `Fails` (`sleep 2; exit 3`).
+
+- [ ] **The menubar icon appears with the Helper and stays after the App quits.**
+  1. Open `/Applications/devdev.app`, then press <kbd>Cmd</kbd> + <kbd>Q</kbd>.
+  2. The devdev icon is still in the menu bar. Activity Monitor shows `devdevHelper` and no `devdev`.
+- [ ] **The panel lists each Project with its status and Start All, Restart All, Stop All.**
+  1. Click the menubar icon. A panel opens with one row per Project: name, coloured dot, status word and three buttons.
+  2. Click Start All on the Project. The dot turns green and the status reads Running.
+  3. Click Restart All. The row reads Running again. In the App later, `Vite`'s output shows a `── restarted HH:MM:SS ──` line.
+  4. Click Stop All. The dot turns grey and the status reads Stopped. `pgrep -fl vite` prints nothing.
+- [ ] **Expanding a Project shows its Commands with status and Start, Restart, Stop.**
+  1. Click the Project's name or its arrow. Its Commands appear below it, in the App's order, each with a dot and a status.
+  2. Click Start on `Vite`. It reads Running, and the Project reads Partly Running if `Fails` is included in Start All.
+  3. Click Restart on `Vite`, then Stop. It reads Running, then Stopped.
+  4. Click the Project's name again. The Commands are hidden.
+- [ ] **The panel shows no output.**
+  1. With `Vite` Running, open the panel. No output text appears anywhere in it.
+- [ ] **Clicking a Command's name opens the App on that Command's output.**
+  1. With the App closed, open the panel and click `Vite`'s name.
+  2. The App opens with `Vite` selected and its output showing.
+  3. In the App select the other Command. Open the panel and click `Vite` again. The App comes forward and `Vite` is selected again.
+- [ ] **Open devdev launches or focuses the App.**
+  1. With the App closed, click Open devdev at the bottom of the panel. The App opens.
+  2. Click on another app's window, then click Open devdev again. The same devdev window comes forward and no second one opens.
+- [ ] **A crash puts a badge on the icon, and Stop All clears it.**
+  1. Click Start on `Fails`. After about 2 seconds it reads Crashed (exit code 3) and the icon shows a red dot.
+  2. Check the icon in both the light and the dark menu bar (System Settings > Appearance). The icon itself stays readable.
+  3. Click Stop All on the Project. The red dot is gone.
+- [ ] **Stop All and Quit in the panel ends everything.**
+  1. Start both Commands from the panel. Click Stop All and Quit.
+  2. The icon is gone. Activity Monitor shows no `devdevHelper`, and `pgrep -fl vite` prints nothing.
+- [ ] **Show menubar icon off keeps the Helper running without an icon.**
+  1. Open the App, press <kbd>Cmd</kbd> + <kbd>,</kbd>. Show menubar icon is on and Launch at login is off.
+  2. Start `Vite`. Turn Show menubar icon off. The icon disappears at once.
+  3. Quit the App with <kbd>Cmd</kbd> + <kbd>Q</kbd>. Activity Monitor still shows `devdevHelper`, and `pgrep -fl vite` still prints a process.
+  4. Open the App and turn the switch back on. The icon comes back. Quit the App and open it again: the switch kept its value.
+- [ ] **Launch at login starts the Helper only, after a real logout and login.**
+  1. In Settings turn Launch at login on. `cat ~/Library/LaunchAgents/dev.devdev.helper.plist` shows `RunAtLoad` and the path `/Applications/devdev.app/Contents/Helpers/devdevHelper.app/Contents/MacOS/devdevHelper`, and no `KeepAlive`.
+  2. Turning it on did not start a second Helper: Activity Monitor shows one `devdevHelper`.
+  3. Start `Vite`, then choose Stop All and Quit in the panel.
+  4. Log out of macOS and log back in. Do not open the App.
+  5. The devdev icon is in the menu bar and Activity Monitor shows one `devdevHelper`. The panel shows every Command as Stopped, and `pgrep -fl vite` prints nothing.
+  6. Note whether macOS showed a "Background Items Added" notice, and whether devdev is listed under System Settings > General > Login Items.
+  7. Turn Launch at login off. The file is gone and the running Helper keeps running. Log out and in again: no `devdevHelper` starts.
+- [ ] **The login item survives a reinstall.**
+  1. Turn Launch at login on. Change any line of Swift in `Helper/` and run `scripts/install.sh`.
+  2. Choose Stop All and Quit in the panel. Log out and log back in.
+  3. The new Helper starts: the icon is there, and opening the App shows no outdated-Helper banner.
+

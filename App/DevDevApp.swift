@@ -13,7 +13,13 @@ struct DevDevApp: App {
         Window("devdev", id: "main") {
             MainWindow(model: model)
                 .frame(minWidth: 900, minHeight: 480)
+                // A Command's name in the menubar panel, or a notification: show its output.
+                .onOpenURL { url in
+                    guard let link = OpenLink(url: url, flavor: BuildFlavor.current()) else { return }
+                    Task { await model.open(link) }
+                }
         }
+        .handlesExternalEvents(matching: [BuildFlavor.current().urlScheme])
         .commands {
             CommandGroup(replacing: .appTermination) {
                 Button("Quit devdev") {
@@ -31,7 +37,7 @@ struct DevDevApp: App {
         }
 
         Settings {
-            SettingsView()
+            SettingsView(model: model)
         }
     }
 }

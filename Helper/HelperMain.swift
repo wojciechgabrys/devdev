@@ -6,12 +6,20 @@ import DevDevCore
 enum HelperMain {
     @MainActor
     static func main() {
-        let paths = HelperPaths(flavor: .current())
+        let flavor = BuildFlavor.current()
+        let paths = HelperPaths(flavor: flavor)
+        // Launch at login: a LaunchAgent file, because the login-item API fails after a reinstall
+        // (docs/spike-results.md item 3). Release always points at /Applications/devdev.app.
+        let loginItem = LaunchAgentLoginItem.forHelper(
+            flavor: flavor,
+            runningHelperExecutable: Bundle.main.executableURL ?? HelperLocation(
+                flavor: flavor, appBundle: HelperLocation.installedApp).helperExecutable)
         let host: HelperHost
         do {
             // The build is read once, at start: the app on disk may be replaced while this Helper runs.
             host = try HelperHost.start(
-                paths: paths, helperVersion: HelperBuild.identifier(ofExecutableAt: Bundle.main.executableURL))
+                paths: paths, helperVersion: HelperBuild.identifier(ofExecutableAt: Bundle.main.executableURL),
+                loginItem: loginItem)
         } catch let error as HelperError where error.code == HelperError.alreadyRunning {
             // One Helper per data folder. The one that runs keeps its Processes.
             exit(0)
@@ -30,7 +38,18 @@ enum HelperMain {
 
         let application = NSApplication.shared
         application.setActivationPolicy(.accessory)
-        withExtendedLifetime(host) {
+
+        // The menubar icon and panel stay for as long as the Helper runs, with or without the App.
+        let model = MenubarModel(engine: host.engine)
+        let statusItem = StatusItemController(
+            model: model,
+            opener: AppOpener(flavor: flavor, appBundle: HelperLocation.app(containingHelper: Bundle.main.bundleURL)))
+        Task { @MainActor in
+            await model.start()
+            statusItem.start()
+        }
+
+        withExtendedLifetime((host, statusItem)) {
             application.run()
         }
     }

@@ -116,10 +116,22 @@ public struct Configuration: Codable, Sendable, Equatable {
 
     public var version: Int
     public var projects: [Project]
+    public var settings: HelperSettings
 
-    public init(version: Int = Configuration.currentVersion, projects: [Project] = []) {
+    public init(
+        version: Int = Configuration.currentVersion, projects: [Project] = [], settings: HelperSettings = HelperSettings()
+    ) {
         self.version = version
         self.projects = projects
+        self.settings = settings
+    }
+
+    // A file saved before Settings existed has none: it gets the defaults.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        projects = try container.decode([Project].self, forKey: .projects)
+        settings = try container.decodeIfPresent(HelperSettings.self, forKey: .settings) ?? HelperSettings()
     }
 }
 

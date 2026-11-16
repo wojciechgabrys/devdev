@@ -193,4 +193,40 @@ import Testing
         #expect(CommandMove.targetIndex(from: 1, toOffset: 1) == 1)
         #expect(CommandMove.targetIndex(from: 1, toOffset: 2) == 1)
     }
+
+    @Test func anOpenLinkSelectsTheCommandAndItsProject() {
+        let vite = Self.command("Vite", .running)
+        let otherID = UUID()
+        var server = Self.command("Server", .stopped)
+        server.projectID = otherID
+        let other = ProjectSnapshot(id: otherID, name: "blog", folder: "/tmp/blog", status: .stopped, commands: [server])
+        var state = Self.connected([Self.project([vite], status: .running), other])
+        #expect(state.selectedCommandID == vite.id)
+
+        state.open(.command(server.id))
+
+        #expect(state.selectedProjectID == otherID)
+        #expect(state.selectedCommandID == server.id)
+    }
+
+    @Test func anOpenLinkThatArrivesBeforeTheHelperAnswersIsAppliedOnceItDoes() {
+        let vite = Self.command("Vite", .running)
+        let queue = Self.command("Queue", .running)
+        var state = WindowState()
+
+        state.open(.command(queue.id))
+        state.connected(
+            snapshot: HelperSnapshot(projects: [Self.project([vite, queue], status: .running)]), compatibility: .current)
+
+        #expect(state.selectedCommandID == queue.id)
+    }
+
+    @Test func anOpenLinkToACommandThatNoLongerExistsKeepsTheSelection() {
+        let vite = Self.command("Vite", .running)
+        var state = Self.connected([Self.project([vite], status: .running)])
+
+        state.open(.command(UUID()))
+
+        #expect(state.selectedCommandID == vite.id)
+    }
 }

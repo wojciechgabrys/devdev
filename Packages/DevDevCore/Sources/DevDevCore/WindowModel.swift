@@ -42,6 +42,8 @@ public final class WindowModel {
     public private(set) var output: OutputSession?
     /// A sentence to show when a request failed. The view clears it.
     public var errorMessage: String?
+    /// The Settings the Helper stores. Nil until the Helper answers, or when it is too old to know them.
+    public private(set) var settings: HelperSettings?
 
     private let socketPath: String
     private let expectedHelperBuild: String
@@ -149,6 +151,11 @@ public final class WindowModel {
         {
             snapshot = loaded
         }
+        if compatibility.allowsRequests,
+            case .settings(let loaded)? = try? await client.send(.settings, origin: .user)
+        {
+            settings = loaded
+        }
         state.connected(snapshot: snapshot, compatibility: compatibility)
         Task { [weak self] in
             for await event in client.events {
@@ -170,6 +177,8 @@ public final class WindowModel {
         case .output(let chunk):
             guard chunk.commandID == watchedCommandID, output?.commandID == chunk.commandID else { return }
             output?.deliver(chunk.data)
+        case .settings(let changed):
+            settings = changed
         case .status, .configuration:
             state.apply(event)
             if state.selectedCommandID != watchedCommandID {
@@ -195,6 +204,12 @@ public final class WindowModel {
 
     public func select(command id: UUID?) async {
         state.select(command: id)
+        await watchSelectedCommand()
+    }
+
+    /// A link from the menubar panel or a notification: shows that Command's output.
+    public func open(_ link: OpenLink) async {
+        state.open(link)
         await watchSelectedCommand()
     }
 
@@ -277,6 +292,26 @@ public final class WindowModel {
     /// A drag in the Commands list. `toOffset` is the row the Command was dropped before.
     public func moveCommand(_ commandID: UUID, from: Int, toOffset: Int) async {
         await perform(.moveCommand(commandID: commandID, toIndex: CommandMove.targetIndex(from: from, toOffset: toOffset)))
+    }
+
+    // MARK: - Settings
+
+    public func setShowMenubarIcon(_ on: Bool) async {
+        guard var changed = settings else { return }
+        changed.showMenubarIcon = on
+        await save(changed)
+    }
+
+    public func setLaunchAtLogin(_ on: Bool) async {
+        guard var changed = settings else { return }
+        changed.launchAtLogin = on
+        await save(changed)
+    }
+
+    private func save(_ changed: HelperSettings) async {
+        if case .settings(let saved)? = await perform(.updateSettings(changed)) {
+            settings = saved
+        }
     }
 
     /// Sends one request with the origin `user`. Nil when it failed; the reason is in `errorMessage`.

@@ -31,6 +31,7 @@ public actor HelperEngine {
     private let timings: Timings
     private let environment: [String: String]
     private let now: @Sendable () -> Date
+    private let loginItem: (any LoginItem)?
     private var runtimes: [UUID: Runtime] = [:]
     private var subscribers: [UUID: Subscriber] = [:]
     private var runCounter = 0
@@ -48,8 +49,10 @@ public actor HelperEngine {
         timings: Timings = .standard,
         helperVersion: String = DevDevCore.version,
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        now: @escaping @Sendable () -> Date = { Date() }
+        now: @escaping @Sendable () -> Date = { Date() },
+        loginItem: (any LoginItem)? = nil
     ) {
+        self.loginItem = loginItem
         self.configuration = configuration
         self.store = store
         self.shell = shell
@@ -310,6 +313,44 @@ public actor HelperEngine {
         changed.projects[projectIndex].commands.insert(command, at: target)
         try commit(changed)
         return projectSnapshot(changed.projects[projectIndex])
+    }
+
+    // MARK: - Settings
+
+    public func settings() -> HelperSettings {
+        configuration.settings
+    }
+
+    /// Saves the Settings and tells every client. Launch at login is applied first: when that fails,
+    /// nothing is saved. It only registers the Helper; it never starts or stops a Process.
+    @discardableResult
+    public func updateSettings(_ settings: HelperSettings) throws -> HelperSettings {
+        let old = configuration.settings
+        guard settings != old else { return old }
+        if settings.launchAtLogin != old.launchAtLogin, let loginItem {
+            do {
+                try loginItem.apply(enabled: settings.launchAtLogin)
+            } catch {
+                throw HelperError(
+                    code: HelperError.saveFailed,
+                    message: "Launch at login could not be changed: \((error as? HelperError)?.message ?? error.localizedDescription)")
+            }
+        }
+        var changed = configuration
+        changed.settings = settings
+        do {
+            try store.save(changed)
+        } catch {
+            if settings.launchAtLogin != old.launchAtLogin {
+                try? loginItem?.apply(enabled: old.launchAtLogin)
+            }
+            throw HelperError(
+                code: HelperError.saveFailed,
+                message: "The configuration could not be saved: \(error.localizedDescription)")
+        }
+        configuration = changed
+        emit(.settings(settings))
+        return settings
     }
 
     // MARK: - Starting and stopping

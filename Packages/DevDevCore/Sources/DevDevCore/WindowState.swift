@@ -40,6 +40,11 @@ public struct CommandActions: Sendable, Equatable {
         self.restart = restart
         self.stop = stop
     }
+
+    /// The buttons that do something for the Command in its current status.
+    public static func available(for command: CommandSnapshot) -> CommandActions {
+        CommandActions(start: command.status != .running, restart: true, stop: command.status != .stopped)
+    }
 }
 
 /// Which "All" buttons of one Project do something right now.
@@ -53,6 +58,14 @@ public struct ProjectActions: Sendable, Equatable {
         self.restartAll = restartAll
         self.stopAll = stopAll
     }
+
+    /// The "All" buttons that do something for the Project in its current state (`docs/spec.md` section 4).
+    public static func available(for project: ProjectSnapshot) -> ProjectActions {
+        ProjectActions(
+            startAll: project.commands.contains { $0.settings.includedInStartAll && $0.status != .running },
+            restartAll: project.commands.contains { $0.status == .running },
+            stopAll: project.commands.contains { $0.status != .stopped })
+    }
 }
 
 /// Everything the main window shows, worked out from what the Helper reports. Views only draw it.
@@ -62,6 +75,8 @@ public struct WindowState: Sendable, Equatable {
     public private(set) var snapshot = HelperSnapshot(projects: [])
     public private(set) var selectedProjectID: UUID?
     public private(set) var selectedCommandID: UUID?
+    /// A link that arrived before the Helper's state did. Applied once it arrives.
+    private var pendingLink: OpenLink?
 
     public init() {}
 
@@ -119,16 +134,12 @@ public struct WindowState: Sendable, Equatable {
 
     public func actions(for command: CommandSnapshot) -> CommandActions {
         guard canAct else { return CommandActions(start: false, restart: false, stop: false) }
-        return CommandActions(
-            start: command.status != .running, restart: true, stop: command.status != .stopped)
+        return CommandActions.available(for: command)
     }
 
     public func actions(for project: ProjectSnapshot) -> ProjectActions {
         guard canAct else { return ProjectActions(startAll: false, restartAll: false, stopAll: false) }
-        return ProjectActions(
-            startAll: project.commands.contains { $0.settings.includedInStartAll && $0.status != .running },
-            restartAll: project.commands.contains { $0.status == .running },
-            stopAll: project.commands.contains { $0.status != .stopped })
+        return ProjectActions.available(for: project)
     }
 
     // MARK: - Changing
@@ -142,6 +153,10 @@ public struct WindowState: Sendable, Equatable {
         self.compatibility = compatibility
         self.snapshot = snapshot
         repairSelection()
+        if let link = pendingLink {
+            pendingLink = nil
+            open(link)
+        }
     }
 
     public mutating func helperUnavailable(_ reason: String) {
@@ -162,15 +177,8 @@ public struct WindowState: Sendable, Equatable {
             snapshot = new
             repairSelection()
         case .status(let change):
-            guard
-                let projectIndex = snapshot.projects.firstIndex(where: { $0.id == change.command.projectID }),
-                let commandIndex = snapshot.projects[projectIndex].commands.firstIndex(where: {
-                    $0.id == change.command.id
-                })
-            else { return }
-            snapshot.projects[projectIndex].commands[commandIndex] = change.command
-            snapshot.projects[projectIndex].status = change.projectStatus
-        case .output, .outputReplay:
+            snapshot.apply(change)
+        case .output, .outputReplay, .settings:
             break
         }
     }
@@ -186,6 +194,19 @@ public struct WindowState: Sendable, Equatable {
         selectedProjectID = id
         selectedCommandID = nil
         repairSelection()
+    }
+
+    /// Selects what the link points at. A link to a Command that does not exist changes nothing.
+    public mutating func open(_ openLink: OpenLink) {
+        switch openLink {
+        case .command(let id):
+            guard let command = snapshot.command(id) else {
+                if link != .connected { pendingLink = openLink }
+                return
+            }
+            selectedProjectID = command.projectID
+            selectedCommandID = command.id
+        }
     }
 
     public mutating func select(command id: UUID?) {

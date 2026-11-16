@@ -84,6 +84,8 @@ public enum HelperEvent: Codable, Sendable, Equatable {
     case outputReplay(OutputChunk)
     /// New output of a Command the client subscribed to.
     case output(OutputChunk)
+    /// The Settings the Helper stores changed.
+    case settings(HelperSettings)
 }
 
 /// An error the Helper reports. `message` is a sentence fit to show.

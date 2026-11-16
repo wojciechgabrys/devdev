@@ -89,6 +89,28 @@ import Testing
         }
     }
 
+    /// The subject of the skeleton commit that `docs/spec.md` says existed before the build began.
+    /// It sits before the build's own commits, so it is not part of the build's history.
+    private let skeletonSubject = "chore: add Xcode project skeleton with a tested core package"
+
+    /// The build's commit subjects, oldest first.
+    ///
+    /// On the build branch these are the commits since `main`. Once the build was squash-merged,
+    /// they live as `* subject` lines, oldest first, in the body of the squash commit on `HEAD`.
+    private func buildSubjects(firstPhaseCommit: String) throws -> [String] {
+        let branch = try branchCommits().map(\.subject)
+        if branch.contains(firstPhaseCommit) { return branch }
+
+        let log = try git(["log", "--first-parent", "--format=%B%x1e", "HEAD"])
+        #expect(log.status == 0)
+        let squash = log.output.components(separatedBy: "\u{1e}").lazy
+            .map { $0.components(separatedBy: "\n").filter { $0.hasPrefix("* ") }.map { String($0.dropFirst(2)) } }
+            .first { $0.contains(firstPhaseCommit) }
+        let subjects = try #require(squash, "no branch commit or squash commit holds the Phase 1 commit")
+        guard let skeleton = subjects.firstIndex(of: skeletonSubject) else { return subjects }
+        return Array(subjects[(skeleton + 1)...])
+    }
+
     /// Phases that knowingly have more than one commit, with the reason. Each one is named in the final report.
     /// Phase 2 was stopped at the output view and finished later. Squashing needs a history rewrite,
     /// which only the user may decide.
@@ -110,7 +132,7 @@ import Testing
         }
 
         let expected = report.flatMap(\.commits)
-        let subjects = try branchCommits().map(\.subject)
+        let subjects = try buildSubjects(firstPhaseCommit: expected[0])
         let first = try #require(subjects.firstIndex(of: expected[0]), "no Phase 1 commit")
 
         let beforePhaseOne = subjects[..<first]

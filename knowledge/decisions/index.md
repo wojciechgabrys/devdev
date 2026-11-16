@@ -7,6 +7,7 @@ title: "Decisions"
 
 # Decisions
 
+- [Build-history tests read squash-merged builds from the squash commit body](DVDV-2-build-history-tests-read-squash-merged-builds-from-the-squas.md): Tests that check a build's commit history fall back to the squash commit's '* subject' lines once the build branch was squash-merged into main.
 - [Debug and Release builds are kept fully apart](DVDV-1-debug-and-release-builds-are-kept-fully-apart.md): Debug builds use their own bundle identifiers, data folder, socket, URL scheme and LaunchAgent label so they never touch the daily installed Helper.
 - [Discovery parses dev:list --json, never the text table](DVDV-1-discovery-parses-devlist-json-never-the-text-table.md): Laravel Discovery runs php artisan dev:list --json and falls back to a fixed list on any failure, because the text table is cut and changes under agent environments.
 - [Editing a Running Command applies at the next start](DVDV-1-editing-a-running-command-applies-at-the-next-start.md): Edits to a Running Command save at once and show a restart-to-apply hint; nothing restarts by itself.
@@ -15,4 +16,5 @@ title: "Decisions"
 - [Launch at login uses a LaunchAgent file, not SMAppService](DVDV-1-launch-at-login-uses-a-launchagent-file-not-smappservice.md): The Helper's launch-at-login is a plist in ~/Library/LaunchAgents because the login-item API breaks after every reinstall of an ad hoc signed build.
 - [MCP tools match names case-insensitively and wait before answering starts](DVDV-1-mcp-tools-match-names-case-insensitively-and-wait-before-ans.md): MCP finds Projects and Commands by name without regard to case, defaults to the Project holding the working directory, and waits about 1 s after start or restart.
 - [Stop signals every process group in the Process's session](DVDV-1-stop-signals-every-process-group-in-the-processs-session.md): Stopping a Process sends SIGTERM then SIGKILL to every process group in the session the child leads, not just the leader's group.
+- [SwiftUI content in an NSPopover uses preferredContentSize sizing](DVDV-2-swiftui-content-in-an-nspopover-uses-preferredcontentsize-si.md): Any NSHostingController placed in an NSPopover sets sizingOptions to .preferredContentSize, and the menubar popover is built only through MenubarPopover.make.
 - [Tests run child processes with /bin/sh, not the login shell](DVDV-1-tests-run-child-processes-with-binsh-not-the-login-shell.md): The Shell is injectable; tests use /bin/sh -c so they do not depend on the user's shell setup, with one small test for the login-shell path.

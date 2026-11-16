@@ -21,6 +21,9 @@ public enum HelperRequest: Codable, Sendable, Equatable {
     case stopAll(projectID: UUID)
     case restartAll(projectID: UUID)
 
+    /// Stops every Process of every Project, then the Helper itself exits.
+    case stopAllAndQuit
+
     /// Replays the stored output as one `outputReplay` event, then pushes `output` events.
     case subscribeOutput(commandID: UUID)
     case unsubscribeOutput(commandID: UUID)
@@ -41,7 +44,7 @@ public enum HelperRequest: Codable, Sendable, Equatable {
         switch self {
         case .hello, .snapshot, .subscribeOutput, .unsubscribeOutput, .plainOutput, .resize:
             false
-        case .start, .stop, .restart, .startAll, .stopAll, .restartAll, .addProject, .renameProject,
+        case .start, .stop, .restart, .startAll, .stopAll, .restartAll, .stopAllAndQuit, .addProject, .renameProject,
             .removeProject, .addCommand, .updateCommand, .deleteCommand, .moveCommand:
             true
         }
@@ -50,7 +53,7 @@ public enum HelperRequest: Codable, Sendable, Equatable {
     /// True for requests that wait for a Process to end.
     var waitsForAProcess: Bool {
         switch self {
-        case .stop, .restart, .stopAll, .restartAll, .removeProject, .deleteCommand: true
+        case .stop, .restart, .stopAll, .restartAll, .stopAllAndQuit, .removeProject, .deleteCommand: true
         default: false
         }
     }
@@ -113,7 +116,7 @@ extension HelperEngine {
         do {
             switch request {
             case .hello:
-                return .hello(protocolVersion: HelperProtocol.version, helperVersion: DevDevCore.version)
+                return .hello(protocolVersion: HelperProtocol.version, helperVersion: helperVersion)
             case .snapshot:
                 return .snapshot(await snapshot())
             case .start(let commandID):
@@ -128,6 +131,9 @@ extension HelperEngine {
                 return .project(try await stopAll(projectID, origin: actingOrigin))
             case .restartAll(let projectID):
                 return .project(try await restartAll(projectID, origin: actingOrigin))
+            case .stopAllAndQuit:
+                await stopAllAndQuit(origin: actingOrigin)
+                return .ok
             case .subscribeOutput(let commandID):
                 try await subscribeOutput(commandID, subscriber: subscriber)
                 return .ok

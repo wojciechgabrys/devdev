@@ -92,6 +92,62 @@ import Testing
         }
     }
 
+    @Test func aClientThatReconnectsGetsTheStoredOutputReplayedAndThenNewOutput() async throws {
+        let line = "echo early; while [ ! -f go ]; do sleep 0.05; done; echo late; \(Script.runsForever)"
+        try await withServer(settings(line)) { h, socketPath in
+            // The first connection, like the App before it quits.
+            let first = try await HelperClient.connect(socketPath: socketPath, clientName: "app")
+            _ = try await first.send(.subscribeOutput(commandID: h.first))
+            _ = try await first.send(.start(commandID: h.first), origin: .user)
+            try await h.waitForOutput(h.first, containing: "early")
+            first.close()
+
+            // The App is reopened. The Process ran on meanwhile.
+            let second = try await HelperClient.connect(socketPath: socketPath, clientName: "app")
+            defer { second.close() }
+            #expect(try await second.send(.subscribeOutput(commandID: h.first)) == .ok)
+            FileManager.default.createFile(atPath: h.projectFolder.appendingPathComponent("go").path, contents: nil)
+
+            var replayed: [String] = []
+            var live = ""
+            for await event in second.events {
+                if case .outputReplay(let chunk) = event {
+                    #expect(live.isEmpty, "the replay comes before any new output")
+                    replayed.append(PlainText.strip(chunk.data))
+                } else if case .output(let chunk) = event {
+                    live += PlainText.strip(chunk.data)
+                    if live.contains("ready") { break }
+                }
+            }
+            #expect(replayed == ["early\n"])
+            #expect(live == "late\nready\n")
+        }
+    }
+
+    @Test func stopAllAndQuitStopsEveryProcessAndThenAsksTheHelperProgramToExit() async throws {
+        try await withServer(settings(Script.runsForever)) { h, socketPath in
+            let client = try await HelperClient.connect(socketPath: socketPath, clientName: "test")
+            defer { client.close() }
+            _ = try await client.send(.start(commandID: h.first), origin: .user)
+            let pid = try #require(try await h.command(h.first).processID)
+
+            #expect(try await client.send(.stopAllAndQuit) == .failure(
+                HelperError(
+                    code: HelperError.originRequired,
+                    message: "A request that changes something must say who asks: user or agent.")))
+            #expect(try await client.send(.stopAllAndQuit, origin: .user) == .ok)
+
+            #expect(try await h.status(h.first) == .stopped)
+            #expect(!processIsAlive(pid))
+            var asked = false
+            for await _ in h.engine.quitRequests {
+                asked = true
+                break
+            }
+            #expect(asked)
+        }
+    }
+
     @Test func statusAndConfigurationChangesArePushedToEveryClientWithoutPolling() async throws {
         try await withServer(settings("exit 3")) { h, socketPath in
             let watcher = try await HelperClient.connect(socketPath: socketPath, clientName: "watcher")

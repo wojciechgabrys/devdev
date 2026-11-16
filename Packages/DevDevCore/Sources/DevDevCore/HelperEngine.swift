@@ -35,11 +35,18 @@ public actor HelperEngine {
     private var subscribers: [UUID: Subscriber] = [:]
     private var runCounter = 0
 
+    /// What the Helper reports as its build in the hello answer.
+    public nonisolated let helperVersion: String
+    /// Yields once after Stop All and Quit has stopped every Process. The Helper program then exits.
+    public nonisolated let quitRequests: AsyncStream<Void>
+    private nonisolated let quitInput: AsyncStream<Void>.Continuation
+
     public init(
         configuration: Configuration,
         store: ConfigurationStore,
         shell: Shell = .userLogin(),
         timings: Timings = .standard,
+        helperVersion: String = DevDevCore.version,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -49,6 +56,8 @@ public actor HelperEngine {
         self.timings = timings
         self.environment = environment
         self.now = now
+        self.helperVersion = helperVersion
+        (quitRequests, quitInput) = AsyncStream.makeStream(of: Void.self)
     }
 
     // MARK: - Reading
@@ -177,6 +186,17 @@ public actor HelperEngine {
     public func stopEverything(origin: Origin) async {
         let ids = configuration.projects.flatMap(\.commands).map(\.id)
         await haltAll(ids.filter { runtimes[$0]?.process != nil }, origin: origin, cause: .stopped, action: nil)
+    }
+
+    /// Stop All and Quit: stops every Process of every Project, then asks the Helper program to exit.
+    public func stopAllAndQuit(origin: Origin) async {
+        await stopEverything(origin: origin)
+        let quitInput = quitInput
+        // A moment for the answer to reach the client before the Helper exits.
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            quitInput.yield()
+        }
     }
 
     // MARK: - Configuration

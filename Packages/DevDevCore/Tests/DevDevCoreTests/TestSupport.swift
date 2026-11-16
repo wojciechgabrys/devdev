@@ -11,6 +11,7 @@ struct TimedOut: Error, CustomStringConvertible {
 func waitUntil(
     _ what: String,
     timeout: Duration = .seconds(10),
+    isolation: isolated (any Actor)? = #isolation,
     _ condition: () async throws -> Bool
 ) async throws {
     let deadline = ContinuousClock.now + timeout

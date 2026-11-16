@@ -71,33 +71,45 @@ final class StatusItemController {
 }
 
 /// The menubar icon, with a red dot while any Command is Crashed.
+///
+/// A server rack drawn on the pixel grid rather than the `server.rack` symbol. The symbol is 15pt
+/// tall with its lines on half points, so on a 1x screen every edge fell between two pixels and the
+/// icon looked blurred. Here every size and position is a whole point, and each 1pt stroke sits on a
+/// half point, so it covers exactly one pixel at 1x and two at 2x.
 enum MenubarIcon {
+    static let size = NSSize(width: 18, height: 18)
+
     static func image(badge: Bool) -> NSImage {
-        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
-        let base =
-            NSImage(systemSymbolName: "server.rack", accessibilityDescription: "devdev")?
-            .withSymbolConfiguration(configuration) ?? NSImage()
-        guard badge else {
-            base.isTemplate = true
-            return base
-        }
-        let size = NSSize(width: max(base.size.width, 18), height: max(base.size.height, 18))
-        let image = NSImage(size: size, flipped: false) { rect in
-            // Drawn at display time, so the icon follows the menu bar's light or dark look.
-            let iconRect = NSRect(
-                x: (rect.width - base.size.width) / 2, y: (rect.height - base.size.height) / 2,
-                width: base.size.width, height: base.size.height)
-            base.draw(in: iconRect)
-            NSColor.labelColor.set()
-            iconRect.fill(using: .sourceAtop)
-            let dot = NSRect(x: rect.maxX - 7, y: rect.maxY - 7, width: 7, height: 7)
-            NSColor.systemRed.setFill()
-            NSBezierPath(ovalIn: dot).fill()
+        let image = NSImage(size: size, flipped: false) { _ in
+            // Drawn at display time, so a badged icon follows the menu bar's light or dark look.
+            (badge ? NSColor.labelColor : .black).set()
+            drawRack()
+            if badge {
+                // Clear a 1pt ring first, so the dot stands apart from the top rack unit.
+                NSGraphicsContext.current?.compositingOperation = .clear
+                NSBezierPath(ovalIn: NSRect(x: 11, y: 11, width: 8, height: 8)).fill()
+                NSGraphicsContext.current?.compositingOperation = .sourceOver
+                NSColor.systemRed.setFill()
+                NSBezierPath(ovalIn: NSRect(x: 12, y: 12, width: 6, height: 6)).fill()
+            }
             return true
         }
-        image.isTemplate = false
-        image.accessibilityDescription = "devdev, a Command crashed"
+        // A template lets the menu bar tint the icon. The badged one keeps its red.
+        image.isTemplate = !badge
+        image.accessibilityDescription = badge ? "devdev, a Command crashed" : "devdev"
         return image
+    }
+
+    /// Three rack units, 4pt tall with 1pt between them, each with a status light on the right.
+    private static func drawRack() {
+        for unit in 0..<3 {
+            let bottom = CGFloat(2 + unit * 5)
+            let outline = NSBezierPath(
+                roundedRect: NSRect(x: 2.5, y: bottom + 0.5, width: 13, height: 3), xRadius: 1, yRadius: 1)
+            outline.lineWidth = 1
+            outline.stroke()
+            NSRect(x: 12, y: bottom + 1, width: 2, height: 2).fill()
+        }
     }
 }
 

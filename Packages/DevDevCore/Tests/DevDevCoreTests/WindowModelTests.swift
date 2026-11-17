@@ -261,8 +261,9 @@ final class HelperStandIn: @unchecked Sendable {
             draft.commandLine = "true"
             let added = await model.addCommand(to: projectID, draft: draft)
             #expect(added)
-            try await waitUntil("both tabs show") { model.state.tabs.count == 2 }
-            let second = try #require(model.state.tabs.last)
+            try await waitUntil("both Commands show") { model.state.selectedProject?.commands.count == 2 }
+            let second = try #require(model.state.selectedProject?.commands.last?.id)
+            await model.show(command: second)
             #expect(model.state.tabs == [first, second])
             let selected = model.state.selectedCommandID
 

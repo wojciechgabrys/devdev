@@ -54,6 +54,10 @@ private struct TabStrip: View {
     @State private var raisedTab: UUID?
     /// Each tab's real width, as laid out.
     @State private var widths: [UUID: Double] = [:]
+    /// The visible part of the strip: how far it is scrolled and how wide it is.
+    @State private var viewport = TabStripViewport(scrollX: 0, width: 0)
+    /// Scrolls the strip by itself while a dragged tab is held at a visible edge.
+    @State private var scrollPosition = ScrollPosition()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The short slide of the neighbours and of the dropped tab. With Reduce Motion they jump.
@@ -85,6 +89,15 @@ private struct TabStrip: View {
             }
             .animation(slide, value: model.state.tabs)
         }
+        .scrollPosition($scrollPosition)
+        .onScrollGeometryChange(for: TabStripViewport.self) {
+            TabStripViewport(scrollX: Double($0.contentOffset.x), width: Double($0.containerSize.width))
+        } action: { _, viewport in
+            scrolled(to: viewport)
+        }
+        // Runs only while the dragged tab is held at an edge with tabs out of view on that side.
+        // Any end of the drag clears `drag`, which stops it.
+        .task(id: drag?.isScrolling ?? false) { await scrollAtEdge() }
         // The dragged tab's Command was deleted or its Project removed: the drag ends quietly.
         .onChange(of: model.state.tabs) { _, tabs in
             guard let drag, !drag.continues(in: tabs) else { return }
@@ -117,11 +130,39 @@ private struct TabStrip: View {
     /// The pointer moved with the left button held on a tab, past the click threshold.
     /// The first call starts the drag. Each new place goes to the model right away.
     private func dragged(_ id: UUID, pressX: Double, pointerX: Double) {
-        var current = drag ?? TabDrag(tab: id, tabs: model.state.tabs, widths: widths, pressX: pressX)
-        guard current?.tab == id, let place = current?.follow(pointerX: pointerX) else { return }
+        var current =
+            drag ?? TabDrag(tab: id, tabs: model.state.tabs, widths: widths, pressX: pressX, viewport: viewport)
+        guard current?.tab == id, let place = current?.follow(pointerX: pointerX, in: viewport) else { return }
         drag = current
         raisedTab = id
         model.moveTab(id, to: place)
+    }
+
+    /// The strip scrolled, by itself or by the user. During a drag the tabs moved under the
+    /// dragged tab, so it may take a new place.
+    private func scrolled(to viewport: TabStripViewport) {
+        self.viewport = viewport
+        guard var current = drag else { return }
+        let place = current.scrolled(to: viewport)
+        drag = current
+        model.moveTab(current.tab, to: place)
+    }
+
+    /// Scrolls the strip a little on every frame while the dragged tab is held at a visible edge.
+    /// It ends when the tab leaves the edge, the first or last tab comes into view, or the drag ends.
+    private func scrollAtEdge() async {
+        let clock = ContinuousClock()
+        var last = clock.now
+        while drag?.isScrolling == true {
+            do { try await Task.sleep(for: .milliseconds(16)) } catch { return }
+            let now = clock.now
+            let elapsed = last.duration(to: now) / .seconds(1)
+            last = now
+            guard let step = drag?.scrollStep(elapsed: elapsed), step != 0 else { return }
+            let scrollX = viewport.scrollX + step
+            scrollPosition.scrollTo(x: scrollX)
+            scrolled(to: TabStripViewport(scrollX: scrollX, width: viewport.width))
+        }
     }
 
     /// The left button was released: the tab settles into the slot it holds.

@@ -249,6 +249,16 @@ Open at least three Commands so the tab strip shows three tabs, here called A, B
 - [ ] **A release outside the window drops the tab.**
   1. Drag a tab past a neighbour, move the pointer out of the window and release there. The tab settles in its new place.
   2. Move the pointer back over the strip without a button held. No tab follows it.
+- [ ] **Holding a dragged tab at an edge scrolls the strip.**
+  1. Open more tabs than fit in the strip, or make the window narrow until some tabs are out of view. Scroll the strip to its left end.
+  2. Drag the first tab to the right edge of the visible strip and hold it there, with the pointer a little past the edge. The strip scrolls right by itself. The dragged tab stays in view at the edge and the other tabs pass under it.
+  3. Keep holding. The scrolling stops when the last tab is in view. Push the pointer further past the edge: the scrolling is faster.
+  4. Release. The tab settles in the last place, which was out of view at the start. Press <kbd>Cmd</kbd> + <kbd>0</kbd>: its output shows.
+  5. Drag that tab to the left edge and hold it. The strip scrolls left and stops at the first tab. Move the tab back inside the strip while it scrolls: the scrolling stops at once.
+  6. Hold a tab at an edge until the strip has scrolled, then press <kbd>Esc</kbd>. The scrolling stops. The order is the same as before the drag. Scroll back: the tab is at the place it started.
+  7. Hold a tab at an edge and release while the strip scrolls. The scrolling stops at once. The same holds after <kbd>Cmd</kbd> + <kbd>Tab</kbd> to another app.
+  8. Drag a tab that is partly out of view at an edge. It comes fully into view and the strip does not scroll until the tab is pushed past the edge.
+  9. With all tabs in view, drag a tab to each end of the strip and hold it there. Nothing scrolls.
 - [ ] **Esc during a drag puts the tab back.**
   1. With the order A, B, C and B selected, drag A past B and C and keep the button held. Press <kbd>Esc</kbd>. A slides back to the first place. The order is A, B, C again.
   2. B is still selected and its output is still shown.

@@ -153,6 +153,7 @@ Steps for each item are in `docs/manual-checklist.md`. Every item is **not verif
 - [ ] **Not verified.** The x button closes and never starts a drag.
 - [ ] **Not verified.** Middle and right buttons never start a drag.
 - [ ] **Not verified.** A release outside the window drops the tab.
+- [ ] **Not verified.** Holding a dragged tab at an edge scrolls the strip.
 - [ ] **Not verified.** Esc during a drag puts the tab back.
 - [ ] **Not verified.** A tab that goes away during a drag ends the drag quietly.
 - [ ] **Not verified.** Losing focus during a drag drops the tab.

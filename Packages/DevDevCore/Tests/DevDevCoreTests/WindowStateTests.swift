@@ -390,4 +390,103 @@ import Testing
 
         #expect(state.tabs == [ids[2], ids[0], ids[1], ids[3]])
     }
+
+    // MARK: - Ending a tab drag early
+
+    /// Starts a drag of `tab` in a strip where every tab is 100 wide, pressed at x 1000.
+    private static func drag(_ tab: UUID, in state: WindowState) -> TabDrag {
+        let widths = Dictionary(uniqueKeysWithValues: state.tabs.map { ($0, 100.0) })
+        return TabDrag(tab: tab, tabs: state.tabs, widths: widths, pressX: 1000)!
+    }
+
+    @Test func escapePutsTheDraggedTabBackSoTheOrderEqualsTheOrderBeforeTheDrag() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        var drag = Self.drag(ids[1], in: state)
+        // B goes right past C and D, then left past everyone, taking each place live.
+        state.moveTab(ids[1], to: drag.follow(pointerX: 1250))
+        state.moveTab(ids[1], to: drag.follow(pointerX: 800))
+        #expect(state.tabs == [ids[1], ids[0], ids[2], ids[3]])
+
+        state.moveTab(drag.tab, to: drag.startPlace)
+
+        #expect(state.tabs == ids)
+    }
+
+    @Test func escapeDoesNotChangeTheSelection() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        var drag = Self.drag(ids[2], in: state)
+        state.moveTab(ids[2], to: drag.follow(pointerX: 700))
+
+        state.moveTab(drag.tab, to: drag.startPlace)
+
+        #expect(state.selectedCommandID == ids[0])
+        #expect(state.selectedProjectID == initial.selectedProjectID)
+    }
+
+    @Test func escapeAfterTabsWereClosedDuringTheDragPutsTheTabAtTheLastPlace() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        var drag = Self.drag(ids[3], in: state)
+        state.moveTab(ids[3], to: drag.follow(pointerX: 700))
+        state.closeTab(ids[1])
+        state.closeTab(ids[2])
+        #expect(state.tabs == [ids[3], ids[0]])
+
+        state.moveTab(drag.tab, to: drag.startPlace)
+
+        #expect(state.tabs == [ids[0], ids[3]])
+    }
+
+    @Test func aDragGoesOnWhileItsTabIsInTheStrip() {
+        let (initial, ids) = Self.tabs(["a", "b", "c"])
+        var state = initial
+        var drag = Self.drag(ids[0], in: state)
+        state.moveTab(ids[0], to: drag.follow(pointerX: 1250))
+
+        #expect(drag.continues(in: state.tabs))
+    }
+
+    @Test func deletingTheDraggedTabsCommandEndsTheDragAndTheOtherTabsKeepTheOrderShown() {
+        let commands = ["a", "b", "c", "d"].map { Self.command($0, .stopped) }
+        let ids = commands.map(\.id)
+        var state = Self.connected([Self.project(commands, status: .stopped)])
+        for id in ids { state.select(tab: id) }
+        var drag = Self.drag(ids[0], in: state)
+        // A's centre starts at 50. Moved 210 right it is at 260, past C's middle at 250.
+        state.moveTab(ids[0], to: drag.follow(pointerX: 1210))
+        #expect(state.tabs == [ids[1], ids[2], ids[0], ids[3]])
+
+        let left = commands.filter { $0.id != ids[0] }
+        state.apply(.configuration(HelperSnapshot(projects: [Self.project(left, status: .stopped)])))
+
+        #expect(!drag.continues(in: state.tabs))
+        #expect(state.tabs == [ids[1], ids[2], ids[3]])
+        // No stale drag is in the way: the next drag starts and moves a tab.
+        var next = Self.drag(ids[3], in: state)
+        state.moveTab(ids[3], to: next.follow(pointerX: 800))
+        #expect(state.tabs == [ids[3], ids[1], ids[2]])
+    }
+
+    @Test func removingTheDraggedTabsProjectEndsTheDragAndTheTabDisappears() {
+        let otherProject = UUID()
+        let api = CommandSnapshot(
+            id: UUID(), projectID: otherProject,
+            settings: CommandSettings(name: "api", commandLine: "run api", includedInStartAll: true),
+            madeByDiscovery: false, status: .stopped, lastExit: nil, restartToApply: false,
+            startedAt: nil, processID: nil)
+        let other = ProjectSnapshot(id: otherProject, name: "api", folder: "/tmp/api", status: .stopped, commands: [api])
+        let shop = Self.project([Self.command("a", .stopped), Self.command("b", .stopped)], status: .stopped)
+        var state = Self.connected([shop, other])
+        for id in [shop.commands[0].id, api.id, shop.commands[1].id] { state.select(tab: id) }
+        var drag = Self.drag(api.id, in: state)
+        state.moveTab(api.id, to: drag.follow(pointerX: 1160))
+        #expect(state.tabs == [shop.commands[0].id, shop.commands[1].id, api.id])
+
+        state.apply(.configuration(HelperSnapshot(projects: [shop])))
+
+        #expect(!drag.continues(in: state.tabs))
+        #expect(state.tabs == [shop.commands[0].id, shop.commands[1].id])
+    }
 }

@@ -73,7 +73,7 @@ private struct TabStrip: View {
                             isActive: model.state.selectedCommandID == id,
                             showsHover: drag == nil, model: model,
                             onDrag: { pressX, pointerX in dragged(id, pressX: pressX, pointerX: pointerX) },
-                            onDrop: drop
+                            onDrop: drop, onCancel: cancel
                         )
                         .onGeometryChange(for: Double.self) { Double($0.size.width) } action: { widths[id] = $0 }
                         .offset(x: offset(of: id))
@@ -84,6 +84,12 @@ private struct TabStrip: View {
                 }
             }
             .animation(slide, value: model.state.tabs)
+        }
+        // The dragged tab's Command was deleted or its Project removed: the drag ends quietly.
+        .onChange(of: model.state.tabs) { _, tabs in
+            guard let drag, !drag.continues(in: tabs) else { return }
+            self.drag = nil
+            raisedTab = nil
         }
         .scrollIndicators(.never)
         .frame(height: 34)
@@ -123,6 +129,15 @@ private struct TabStrip: View {
         withAnimation(slide) { drag = nil }
     }
 
+    /// Esc during a drag: the tab goes back to the place it started. The selection stays.
+    private func cancel() {
+        guard let drag else { return }
+        withAnimation(slide) {
+            model.moveTab(drag.tab, to: drag.startPlace)
+            self.drag = nil
+        }
+    }
+
     private func step(_ delta: Int) {
         let tabs = model.state.tabs
         guard !tabs.isEmpty else { return }
@@ -141,6 +156,7 @@ private struct OutputTab: View {
     let model: WindowModel
     let onDrag: (_ pressX: Double, _ pointerX: Double) -> Void
     let onDrop: () -> Void
+    let onCancel: () -> Void
     @State private var isHovering = false
 
     /// The close button's side, and its gap to the tab's right edge.
@@ -187,7 +203,7 @@ private struct OutputTab: View {
         .onTabPointer(
             closeButton: Self.closeButton,
             onClick: { Task { await model.show(command: command.id) } },
-            onDrag: onDrag, onDrop: onDrop
+            onDrag: onDrag, onDrop: onDrop, onCancel: onCancel
         )
         .onMiddleClick { Task { await model.closeTab(command.id) } }
         .onHover { isHovering = $0 }

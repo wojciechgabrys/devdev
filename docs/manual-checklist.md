@@ -249,6 +249,21 @@ Open at least three Commands so the tab strip shows three tabs, here called A, B
 - [ ] **A release outside the window drops the tab.**
   1. Drag a tab past a neighbour, move the pointer out of the window and release there. The tab settles in its new place.
   2. Move the pointer back over the strip without a button held. No tab follows it.
+- [ ] **Esc during a drag puts the tab back.**
+  1. With the order A, B, C and B selected, drag A past B and C and keep the button held. Press <kbd>Esc</kbd>. A slides back to the first place. The order is A, B, C again.
+  2. B is still selected and its output is still shown.
+  3. Keep the button held and move the pointer. No tab follows it. Release over C. C is not selected and no tab moves.
+  4. Drag A again and drop it. The drag works as before.
+  5. Open a sheet, such as Edit Command, then close it. With no drag going on, <kbd>Esc</kbd> still closes sheets and the Go to Command field as before.
+- [ ] **A tab that goes away during a drag ends the drag quietly.**
+  1. Select A. Drag A past B and hold it. Press <kbd>Cmd</kbd> + <kbd>W</kbd>. A disappears. B and C keep the order shown at that moment. No alert appears.
+  2. Release the button. No tab moves and the release selects nothing.
+  3. Drag B past C and drop it. The drag works.
+  4. A Command deleted or a Project removed during a drag takes the same path. One pointer cannot hold a drag and click Delete, so unit tests cover that part. With a second pointing device: hold a drag of A with one, delete A's Command with the other. A disappears, no alert appears and the next drag works.
+- [ ] **Losing focus during a drag drops the tab.**
+  1. Drag A past B and hold it. Press <kbd>Cmd</kbd> + <kbd>Tab</kbd> to switch to another app. A settles in its new place. The order is B, A, C.
+  2. Release the button and come back to DevDev. The order is still B, A, C and the selection is unchanged. Moving the pointer moves no tab.
+  3. Drag A past C and hold it. Press <kbd>Cmd</kbd> + <kbd>W</kbd> until the window closes, or close it another way. Reopen the window. The tabs that are left keep the order shown when it closed, and a new drag works.
 - [ ] **A tab drag never moves the window.**
   1. Note where the window is. Drag a tab left, right, up and down. The window stays where it was.
 - [ ] **With Reduce Motion on, the neighbours jump.**

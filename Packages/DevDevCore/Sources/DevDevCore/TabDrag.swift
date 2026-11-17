@@ -37,6 +37,20 @@ public struct TabDrag: Equatable, Sendable {
         geometry.targetPlace(offset: offset)
     }
 
+    /// The place the tab held when the drag started. Esc moves it back there.
+    ///
+    /// If tabs were closed during the drag, the place may lie past the end of the list.
+    /// `WindowState.moveTab` clamps it.
+    public var startPlace: Int {
+        geometry.draggedPlace
+    }
+
+    /// Whether the drag can go on: false once the dragged tab is gone from `tabs`, such as when
+    /// its Command was deleted or its Project removed.
+    public func continues(in tabs: [UUID]) -> Bool {
+        tabs.contains(tab)
+    }
+
     /// Moves the tab with the pointer, stopping at the strip's ends. Gives the place it takes now.
     @discardableResult
     public mutating func follow(pointerX: Double) -> Int {

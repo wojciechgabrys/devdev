@@ -180,10 +180,7 @@ private struct TabStrip: View {
     }
 
     private func step(_ delta: Int) {
-        let tabs = model.state.tabs
-        guard !tabs.isEmpty else { return }
-        let current = model.state.selectedCommandID.flatMap(tabs.firstIndex(of:)) ?? 0
-        let next = tabs[(current + delta + tabs.count) % tabs.count]
+        guard let next = model.state.tab(steppingBy: delta) else { return }
         Task { await model.show(command: next) }
     }
 }
@@ -201,7 +198,7 @@ private struct OutputTab: View {
     @State private var isHovering = false
 
     /// The close button's side, and its gap to the tab's right edge.
-    private static let closeButton: (side: CGFloat, trailing: CGFloat) = (16, 8)
+    private static let closeButton = TabPress.CloseButton(side: 16, trailing: 8)
 
     private var isHighlighted: Bool { isHovering && showsHover }
 
@@ -220,7 +217,7 @@ private struct OutputTab: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 8.5, weight: .bold))
-                    .frame(width: Self.closeButton.side, height: Self.closeButton.side)
+                    .frame(width: CGFloat(Self.closeButton.side), height: CGFloat(Self.closeButton.side))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -230,7 +227,7 @@ private struct OutputTab: View {
             .accessibilityLabel("Close \(command.settings.name)")
         }
         .padding(.leading, 14)
-        .padding(.trailing, Self.closeButton.trailing)
+        .padding(.trailing, CGFloat(Self.closeButton.trailing))
         .frame(minWidth: 150, maxHeight: .infinity)
         .background(isActive ? Graphite.canvas : isHighlighted ? Graphite.hover.opacity(0.5) : .clear)
         // The strip's own colour, so a dragged tab hides the tabs it passes over.
@@ -240,13 +237,14 @@ private struct OutputTab: View {
         }
         .overlay(alignment: .trailing) { Rectangle().fill(Graphite.line).frame(width: 1) }
         .contentShape(Rectangle())
-        // A click selects, a sideways drag moves the tab. The close button keeps its own clicks.
+        // A click selects, a sideways drag moves the tab, a middle click closes it. The close button
+        // keeps its own clicks.
         .onTabPointer(
             closeButton: Self.closeButton,
             onClick: { Task { await model.show(command: command.id) } },
+            onClose: { Task { await model.closeTab(command.id) } },
             onDrag: onDrag, onDrop: onDrop, onCancel: onCancel
         )
-        .onMiddleClick { Task { await model.closeTab(command.id) } }
         .onHover { isHovering = $0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(command.settings.name) in \(projectName), \(command.statusText)")

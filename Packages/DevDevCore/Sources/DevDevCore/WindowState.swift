@@ -249,6 +249,14 @@ public struct WindowState: Sendable, Equatable {
         return tabs.indices.contains(number - 1) ? tabs[number - 1] : nil
     }
 
+    /// The tab Cmd-Shift-] (`delta` 1) and Cmd-Shift-[ (`delta` -1) show: the neighbour of the
+    /// selected tab in the order shown, wrapping at the ends. Nil when no tab is open.
+    public func tab(steppingBy delta: Int) -> UUID? {
+        guard !tabs.isEmpty else { return nil }
+        let current = selectedCommandID.flatMap(tabs.firstIndex(of:)) ?? 0
+        return tabs[((current + delta) % tabs.count + tabs.count) % tabs.count]
+    }
+
     /// What Cmd-W closes.
     public enum CloseTarget: Equatable, Sendable {
         case tab(UUID)

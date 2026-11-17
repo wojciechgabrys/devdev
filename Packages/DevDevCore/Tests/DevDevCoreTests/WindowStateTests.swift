@@ -391,6 +391,102 @@ import Testing
         #expect(state.tabs == [ids[2], ids[0], ids[1], ids[3]])
     }
 
+    @Test func afterAMovePreviousAndNextTabStepLeftAndRightThroughTheNewOrderAndWrapAtTheEnds() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        // The order shown becomes C, A, D, B. A is selected.
+        state.moveTab(ids[2], to: 0)
+        state.moveTab(ids[1], to: 3)
+        #expect(state.tabs == [ids[2], ids[0], ids[3], ids[1]])
+
+        // Cmd-Shift-] four times: D, B, then round the right end to C, and back to A.
+        var shown: [UUID] = []
+        for _ in 0..<4 {
+            let next = state.tab(steppingBy: 1)!
+            state.select(tab: next)
+            shown.append(next)
+        }
+        #expect(shown == [ids[3], ids[1], ids[2], ids[0]])
+
+        // Cmd-Shift-[ four times: C, then round the left end to B, then D, and back to A.
+        shown = []
+        for _ in 0..<4 {
+            let previous = state.tab(steppingBy: -1)!
+            state.select(tab: previous)
+            shown.append(previous)
+        }
+        #expect(shown == [ids[2], ids[1], ids[3], ids[0]])
+        // Stepping shows tabs. It never reorders them.
+        #expect(state.tabs == [ids[2], ids[0], ids[3], ids[1]])
+    }
+
+    @Test func withNoTabOpenPreviousAndNextTabShowNothing() {
+        let state = WindowState()
+        #expect(state.tab(steppingBy: 1) == nil)
+        #expect(state.tab(steppingBy: -1) == nil)
+    }
+
+    // MARK: - A whole tab drag
+
+    /// Feeds one left-button drag through `TabPress` and `TabDrag` the way the tab strip does:
+    /// every place the drag gives goes to the state at once. Returns what the release gave.
+    private static func dragTab(
+        _ tab: UUID, in state: inout WindowState, through pointerXs: [Double],
+        check: (WindowState) -> Void = { _ in }
+    ) -> TabPress.Effect {
+        var press = TabPress()
+        var drag: TabDrag?
+        press.press(.left, on: .body, x: 1000)
+        for pointerX in pointerXs {
+            guard case .drag(let pressX, let x) = press.move(.left, toX: pointerX) else { continue }
+            let widths = Dictionary(uniqueKeysWithValues: state.tabs.map { ($0, 100.0) })
+            var current = drag ?? TabDrag(tab: tab, tabs: state.tabs, widths: widths, pressX: pressX)!
+            state.moveTab(tab, to: current.follow(pointerX: x))
+            drag = current
+            check(state)
+        }
+        return press.release(.left, inside: false)
+    }
+
+    @Test func draggingATabThatIsNotSelectedKeepsTheSelectedCommandAndItsOutputShown() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        state.select(tab: ids[1])
+        let shown = state.selectedCommand
+
+        // A goes right past everyone, then back past C, and is dropped there.
+        let release = Self.dragTab(ids[0], in: &state, through: [1010, 1150, 1400, 1160]) { state in
+            #expect(state.selectedCommandID == ids[1])
+            #expect(state.selectedProjectID == Self.projectID)
+            #expect(state.selectedCommand == shown)
+        }
+
+        // The drop is not a click, so it selects nothing.
+        #expect(release == .drop)
+        #expect(state.tabs == [ids[1], ids[0], ids[2], ids[3]])
+        #expect(state.selectedCommandID == ids[1])
+        #expect(state.selectedCommand == shown)
+    }
+
+    @Test func draggingTheSelectedTabKeepsItSelectedAndItsOutputShown() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        state.select(tab: ids[1])
+        let shown = state.selectedCommand
+
+        // The selected tab B goes left past A, then right to the last place.
+        let release = Self.dragTab(ids[1], in: &state, through: [900, 849, 1100, 1300]) { state in
+            #expect(state.selectedCommandID == ids[1])
+            #expect(state.selectedProjectID == Self.projectID)
+            #expect(state.selectedCommand == shown)
+        }
+
+        #expect(release == .drop)
+        #expect(state.tabs == [ids[0], ids[2], ids[3], ids[1]])
+        #expect(state.selectedCommandID == ids[1])
+        #expect(state.selectedCommand == shown)
+    }
+
     // MARK: - Ending a tab drag early
 
     /// Starts a drag of `tab` in a strip where every tab is 100 wide, pressed at x 1000.

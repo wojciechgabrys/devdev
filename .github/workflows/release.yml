@@ -1,6 +1,7 @@
 name: Release
 
-# Push a tag such as v0.1.0 to build devdev.app and attach it as a DMG to a GitHub release.
+# Push a tag such as v0.1.0 to build devdev.app and attach it to a GitHub release as a DMG,
+# with the appcast.xml that the app's updater reads.
 on:
   push:
     tags:
@@ -41,6 +42,17 @@ jobs:
           fi
           echo "VERSION=$tag_version" >> "$GITHUB_ENV"
 
+      # Without the key the DMG cannot be signed, so stop here, before the long build.
+      # scripts/setup-update-key.sh sets the secret.
+      - name: Check the update signing key is set
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          if [ -z "$(printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | tr -d '[:space:]')" ]; then
+            echo "::error::The Actions secret SPARKLE_ED_PRIVATE_KEY is missing or empty. Run scripts/setup-update-key.sh once to set it."
+            exit 1
+          fi
+
       # SwiftTerm's build plug-in must be trusted before xcodebuild runs it. On a Mac a person clicks
       # Trust & Enable once. Here the same trust is written for the pinned SwiftTerm revision only,
       # so a SwiftTerm bump fails this job until the fingerprint below is updated on purpose.
@@ -72,9 +84,35 @@ jobs:
         run: |
           scripts/make-dmg.sh "$DERIVED_DATA/Build/Products/Release/devdev.app" "devdev-$VERSION.dmg"
 
+      # The notes are generated once. The same text goes into the appcast and onto the release.
+      - name: Get the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+            -f tag_name="$GITHUB_REF_NAME" --jq .body > release-notes.md
+
+      # The key goes in through standard input. It is never an argument and never in a file.
+      - name: Sign the DMG and make the appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          printf '%s\n' "$SPARKLE_ED_PRIVATE_KEY" | scripts/make-appcast.sh \
+            "devdev-$VERSION.dmg" "$VERSION" release-notes.md - appcast.xml
+
+      # Installed copies verify an update with the public key they ship. If the secret is not the
+      # pair of that key, no copy could install this release, so fail before a release exists.
+      - name: Check the signature against the key in the app
+        run: |
+          if ! swift scripts/verify-update-signature.swift "devdev-$VERSION.dmg" appcast.xml "$DERIVED_DATA/Build/Products/Release/devdev.app"; then
+            echo "::error::The DMG's signature does not verify against the SUPublicEDKey in the built app. No release was made."
+            exit 1
+          fi
+
+      # Both files are uploaded in the one call that creates the release.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "devdev-$VERSION.dmg" \
-            --title "devdev $VERSION" --generate-notes --verify-tag
+          gh release create "$GITHUB_REF_NAME" "devdev-$VERSION.dmg" appcast.xml \
+            --title "devdev $VERSION" --notes-file release-notes.md --verify-tag

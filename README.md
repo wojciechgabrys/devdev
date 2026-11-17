@@ -104,3 +104,7 @@ A middle click on a tab closes it.
 | `GLOSSARY.md` | The words DevDev uses, and the ones it avoids |
 
 The full behaviour is specified in [docs/spec.md](docs/spec.md).
+
+## License
+
+DevDev is released under the [MIT License](LICENSE). **About DevDev** in the App menu lists every package built into `devdev.app`, with its license and NOTICE text. Those texts live in `App/Acknowledgements/`, and `AcknowledgementsTests` fails when a pinned package is missing from them.

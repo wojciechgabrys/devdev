@@ -24,6 +24,7 @@ struct DevDevApp: App {
         .defaultSize(width: 1180, height: 760)
         .handlesExternalEvents(matching: [BuildFlavor.current().urlScheme])
         .commands {
+            AboutCommands()
             CommandGroup(replacing: .appTermination) {
                 Button("Quit DevDev") {
                     NSApp.terminate(nil)
@@ -39,6 +40,13 @@ struct DevDevApp: App {
             // Find in the output: SwiftTerm answers the standard Find menu items.
             TextEditingCommands()
         }
+
+        Window("About DevDev", id: AboutWindow.id) {
+            AboutWindow()
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+        .restorationBehavior(.disabled)
 
         Settings {
             SettingsView(model: model)

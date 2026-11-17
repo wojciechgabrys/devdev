@@ -20,6 +20,12 @@ import Testing
                 == "https://github.com/wojciechgabrys/devdev/releases/latest/download/appcast.xml")
     }
 
+    @Test func thePublicUpdateKeyIsPresentAndIsBase64Of32Bytes() throws {
+        let key = try #require(try plist()["SUPublicEDKey"] as? String)
+        // An Ed25519 public key is 32 bytes. Sparkle rejects every update when it is malformed.
+        #expect(Data(base64Encoded: key)?.count == 32)
+    }
+
     @Test func automaticChecksAreOnFromTheFirstLaunchOnceADayWithNoPermissionPrompt() throws {
         let plist = try plist()
         // Set to true, Sparkle checks without asking; unset, it would ask on the second launch.

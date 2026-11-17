@@ -41,10 +41,8 @@ struct ProjectTree: View {
                                 }
                             }
                             if !collapsed.contains(project.id) {
-                                ForEach(Array(project.commands.enumerated()), id: \.element.id) { index, command in
-                                    CommandLeaf(
-                                        command: command, index: index, project: project, model: model,
-                                        actions: actions)
+                                ForEach(project.commands) { command in
+                                    CommandLeaf(command: command, model: model, actions: actions)
                                 }
                             }
                         }
@@ -174,8 +172,6 @@ struct ProjectActionsMenu: View {
 /// A Command row inside its Project: status, name, and how long it ran or how it ended.
 private struct CommandLeaf: View {
     let command: CommandSnapshot
-    let index: Int
-    let project: ProjectSnapshot
     let model: WindowModel
     let actions: WindowActions
     @State private var isHovering = false
@@ -224,15 +220,6 @@ private struct CommandLeaf: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .contextMenu {
             CommandActionsMenu(command: command, model: model, actions: actions)
-            Divider()
-            Button("Move Up") {
-                Task { await model.moveCommand(command.id, from: index, toOffset: index - 1) }
-            }
-            .disabled(index == 0 || !model.state.canAct)
-            Button("Move Down") {
-                Task { await model.moveCommand(command.id, from: index, toOffset: index + 2) }
-            }
-            .disabled(index == project.commands.count - 1 || !model.state.canAct)
         }
     }
 }

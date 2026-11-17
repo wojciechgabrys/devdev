@@ -72,13 +72,12 @@ import Testing
         #expect(settings.subfolder.isEmpty)
     }
 
-    @Test func commandsKeepTheirOrderAndCanBeMoved() async throws {
+    @Test func commandsKeepTheOrderTheyWereAddedIn() async throws {
         let commands = ["A", "B", "C"].map { CommandSettings(name: $0, commandLine: "true") }
         try await withHarness(commands) { h in
-            #expect(try await h.project().commands.map(\.settings.name) == ["A", "B", "C"])
-            let moved = try await h.engine.moveCommand(h.commandIDs[2], toIndex: 0)
-            #expect(moved.commands.map(\.settings.name) == ["C", "A", "B"])
-            #expect(try saved(h).projects[0].commands.map(\.settings.name) == ["C", "A", "B"])
+            let project = try await h.project()
+            #expect(project.commands.map(\.settings.name) == ["A", "B", "C"])
+            #expect(try saved(h).projects[0].commands.map(\.settings.name) == ["A", "B", "C"])
         }
     }
 

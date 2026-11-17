@@ -234,24 +234,6 @@ final class HelperStandIn: @unchecked Sendable {
         }
     }
 
-    @Test func draggingACommandReordersItInTheHelper() async throws {
-        try await withStandIn { helper in
-            let (model, first) = try await modelWithCommand(helper, "true")
-            let projectID = try #require(model.state.selectedProject?.id)
-            var draft = CommandDraft()
-            draft.name = "Second"
-            draft.commandLine = "true"
-            let answer4 = await model.addCommand(to: projectID, draft: draft)
-            #expect(answer4)
-
-            await model.moveCommand(first, from: 0, toOffset: 2)
-
-            try await waitUntil("the order changed") {
-                model.state.selectedProject?.commands.map(\.settings.name) == ["Second", "Main"]
-            }
-        }
-    }
-
     @Test func movingATabReordersTheTabsInTheWindowAndSendsNothingToTheHelper() async throws {
         try await withStandIn { helper in
             let (model, first) = try await modelWithCommand(helper, "true")

@@ -207,14 +207,6 @@ import Testing
         #expect(settings.containerName == "")
     }
 
-    @Test func draggingACommandInTheListGivesTheIndexTheHelperExpects() {
-        // SwiftUI reports the row the item is dropped before, counted with the item still in place.
-        #expect(CommandMove.targetIndex(from: 0, toOffset: 3) == 2)
-        #expect(CommandMove.targetIndex(from: 2, toOffset: 0) == 0)
-        #expect(CommandMove.targetIndex(from: 1, toOffset: 1) == 1)
-        #expect(CommandMove.targetIndex(from: 1, toOffset: 2) == 1)
-    }
-
     @Test func anOpenLinkSelectsTheCommandAndItsProject() {
         let vite = Self.command("Vite", .running)
         let otherID = UUID()

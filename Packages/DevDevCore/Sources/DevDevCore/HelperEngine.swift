@@ -347,18 +347,6 @@ public actor HelperEngine {
         forget(commandID)
     }
 
-    /// Moves the Command to a new place in its Project's order.
-    @discardableResult
-    public func moveCommand(_ commandID: UUID, toIndex: Int) throws -> ProjectSnapshot {
-        let (projectIndex, commandIndex) = try indices(commandID)
-        var changed = configuration
-        let command = changed.projects[projectIndex].commands.remove(at: commandIndex)
-        let target = min(max(0, toIndex), changed.projects[projectIndex].commands.count)
-        changed.projects[projectIndex].commands.insert(command, at: target)
-        try commit(changed)
-        return projectSnapshot(changed.projects[projectIndex])
-    }
-
     // MARK: - Discovery
 
     /// Reads the Project's folder and says what a checklist should offer to add and to remove.

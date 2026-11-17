@@ -44,7 +44,9 @@ import Testing
             environment: [EnvironmentVariable(name: "A", value: "1"), EnvironmentVariable(name: "B", value: "2")],
             includedInStartAll: false,
             autoRestart: true,
-            restartWhenFilesChange: ["app/**/*.php", "config/*.php"])
+            restartWhenFilesChange: ["app/**/*.php", "config/*.php"],
+            runInContainer: true,
+            containerName: "laravel")
         try await withHarness([]) { h in
             let added = try await h.engine.addCommand(to: h.projectID, settings: settings, madeByDiscovery: true)
             let reloaded = try saved(h)
@@ -100,6 +102,19 @@ import Testing
             await #expect(throws: HelperError.self) {
                 try await h.engine.addCommand(to: h.projectID, settings: CommandSettings(name: "x", commandLine: ""))
             }
+        }
+    }
+
+    @Test func aCommandThatRunsInAContainerNeedsAContainerName() async throws {
+        try await withHarness([]) { h in
+            let unnamed = CommandSettings(name: "Vite", commandLine: "npm run dev", runInContainer: true, containerName: " ")
+            await #expect(throws: HelperError.self) {
+                try await h.engine.addCommand(to: h.projectID, settings: unnamed)
+            }
+            // With the switch off, a blank name is fine: the Command runs on this Mac.
+            var onTheMac = unnamed
+            onTheMac.runInContainer = false
+            _ = try await h.engine.addCommand(to: h.projectID, settings: onTheMac)
         }
     }
 

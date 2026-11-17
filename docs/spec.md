@@ -85,6 +85,8 @@ Put the logic in a Swift package with tests, and keep the UI targets thin:
 | Included in Start All | Switch. On by default. |
 | Auto-restart | Switch. Off by default. |
 | Restart when files change | Optional list of glob patterns relative to the Project folder. Empty means off. |
+| Run inside a Docker container | Switch. Off by default. When on, the line runs as `docker exec -it [-e VAR …] CONTAINER <command line>`, with `-e` for each environment variable. |
+| Container name | Needed when the switch above is on; disabled otherwise. Kept when the switch is turned off. |
 
 Commands have a stable order that the user can rearrange; Start All starts them in that order.
 

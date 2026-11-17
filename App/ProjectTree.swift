@@ -188,6 +188,13 @@ private struct CommandLeaf: View {
                 .font(.system(size: 12.5))
                 .foregroundStyle(isSelected ? Graphite.strong : Graphite.text)
                 .lineLimit(1)
+            if command.settings.runInContainer {
+                Image(systemName: "shippingbox")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Graphite.secondary)
+                    .help("Runs inside the Docker container “\(command.settings.containerName)”")
+                    .accessibilityLabel("In container \(command.settings.containerName)")
+            }
             if command.restartToApply {
                 Image(systemName: "arrow.triangle.2.circlepath")
                     .font(.system(size: 9, weight: .semibold))
@@ -211,7 +218,7 @@ private struct CommandLeaf: View {
         .contentShape(Rectangle())
         .onTapGesture { Task { await model.show(command: command.id) } }
         .onHover { isHovering = $0 }
-        .help(command.settings.commandLine)
+        .help(command.settings.effectiveCommandLine)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(command.settings.name), \(command.statusText)")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)

@@ -437,7 +437,7 @@ public actor HelperEngine {
         }
         let spec = ProcessSpec(
             executable: shell.executable,
-            arguments: shell.arguments + [command.settings.commandLine],
+            arguments: shell.arguments + [command.settings.effectiveCommandLine],
             environment: processEnvironment,
             workingDirectory: folder.path,
             size: runtime.size)
@@ -758,6 +758,10 @@ public actor HelperEngine {
         }
         guard !settings.commandLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw HelperError(code: HelperError.invalid, message: "A Command needs a command line.")
+        }
+        settings.containerName = settings.containerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if settings.runInContainer && settings.containerName.isEmpty {
+            throw HelperError(code: HelperError.invalid, message: "A Command that runs in a container needs a container name.")
         }
         if let taken = project.commands.first(where: {
             $0.id != except && $0.settings.name.caseInsensitiveCompare(settings.name) == .orderedSame

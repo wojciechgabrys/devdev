@@ -56,6 +56,10 @@ public struct CommandSettings: Codable, Sendable, Equatable {
     public var autoRestart: Bool
     /// Glob patterns relative to the Project folder. Empty means off.
     public var restartWhenFilesChange: [String]
+    /// True when the command line runs inside a Docker container with `docker exec`.
+    public var runInContainer: Bool
+    /// The Docker container to run in. Kept while `runInContainer` is off, so the switch can be flipped back.
+    public var containerName: String
 
     public init(
         name: String,
@@ -64,7 +68,9 @@ public struct CommandSettings: Codable, Sendable, Equatable {
         environment: [EnvironmentVariable] = [],
         includedInStartAll: Bool = true,
         autoRestart: Bool = false,
-        restartWhenFilesChange: [String] = []
+        restartWhenFilesChange: [String] = [],
+        runInContainer: Bool = false,
+        containerName: String = ""
     ) {
         self.name = name
         self.commandLine = commandLine
@@ -73,11 +79,36 @@ public struct CommandSettings: Codable, Sendable, Equatable {
         self.includedInStartAll = includedInStartAll
         self.autoRestart = autoRestart
         self.restartWhenFilesChange = restartWhenFilesChange
+        self.runInContainer = runInContainer
+        self.containerName = containerName
+    }
+
+    // A file saved before containers existed has neither field: the Command runs on this Mac.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        commandLine = try container.decode(String.self, forKey: .commandLine)
+        subfolder = try container.decode(String.self, forKey: .subfolder)
+        environment = try container.decode([EnvironmentVariable].self, forKey: .environment)
+        includedInStartAll = try container.decode(Bool.self, forKey: .includedInStartAll)
+        autoRestart = try container.decode(Bool.self, forKey: .autoRestart)
+        restartWhenFilesChange = try container.decode([String].self, forKey: .restartWhenFilesChange)
+        runInContainer = try container.decodeIfPresent(Bool.self, forKey: .runInContainer) ?? false
+        containerName = try container.decodeIfPresent(String.self, forKey: .containerName) ?? ""
+    }
+
+    /// The line the login shell runs. Inside a container it is `docker exec -it NAME <command line>`,
+    /// with `-e NAME` for each environment variable so the container gets the values set here.
+    public var effectiveCommandLine: String {
+        guard runInContainer else { return commandLine }
+        let variables = environment.map { "-e \(Shell.quoted($0.name)) " }.joined()
+        return "docker exec -it \(variables)\(Shell.quoted(containerName)) \(commandLine)"
     }
 
     /// True when the two differ in a field that only takes effect at the next start.
     func runsDifferently(from other: CommandSettings) -> Bool {
-        commandLine != other.commandLine || subfolder != other.subfolder || environment != other.environment
+        effectiveCommandLine != other.effectiveCommandLine || subfolder != other.subfolder
+            || environment != other.environment
     }
 }
 
@@ -225,4 +256,11 @@ public struct Shell: Sendable, Equatable {
 
     /// `/bin/sh -c`, with no profile files read.
     public static let plain = Shell(executable: "/bin/sh", arguments: ["-c"])
+
+    /// `word` as one shell word. Plain names stay as they are; anything else goes in single quotes.
+    public static func quoted(_ word: String) -> String {
+        let plain = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.:/@%+=")
+        if !word.isEmpty, word.unicodeScalars.allSatisfy(plain.contains) { return word }
+        return "'" + word.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
 }

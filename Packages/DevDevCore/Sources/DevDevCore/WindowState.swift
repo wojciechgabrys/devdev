@@ -370,6 +370,8 @@ public struct CommandDraft: Sendable, Equatable {
     public var autoRestart = false
     /// One glob pattern per line.
     public var restartWhenFilesChange = ""
+    public var runInContainer = false
+    public var containerName = ""
 
     public init() {}
 
@@ -381,6 +383,8 @@ public struct CommandDraft: Sendable, Equatable {
         includedInStartAll = settings.includedInStartAll
         autoRestart = settings.autoRestart
         restartWhenFilesChange = settings.restartWhenFilesChange.joined(separator: "\n")
+        runInContainer = settings.runInContainer
+        containerName = settings.containerName
     }
 
     /// The settings to send. Blank variable names and blank pattern lines are dropped. The Helper checks the rest.
@@ -397,7 +401,9 @@ public struct CommandDraft: Sendable, Equatable {
             autoRestart: autoRestart,
             restartWhenFilesChange: restartWhenFilesChange.split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty })
+                .filter { !$0.isEmpty },
+            runInContainer: runInContainer,
+            containerName: containerName.trimmingCharacters(in: .whitespaces))
     }
 }
 

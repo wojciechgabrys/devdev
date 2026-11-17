@@ -47,6 +47,18 @@ struct CommandForm: View {
                         .font(.system(.body, design: .monospaced))
                     TextField("Subfolder", text: $draft.subfolder, prompt: Text("Project folder"))
                 }
+                Section {
+                    Toggle("Run inside a Docker container", isOn: $draft.runInContainer)
+                    TextField("Container name", text: $draft.containerName, prompt: Text("app"))
+                        .font(.system(.body, design: .monospaced))
+                        .disabled(!draft.runInContainer)
+                    if draft.runInContainer {
+                        Text("Runs as: \(draft.settings.effectiveCommandLine)")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
                 Section("Environment variables") {
                     ForEach(draft.environment.indices, id: \.self) { index in
                         HStack {

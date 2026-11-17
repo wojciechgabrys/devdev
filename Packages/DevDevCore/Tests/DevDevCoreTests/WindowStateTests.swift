@@ -168,7 +168,8 @@ import Testing
         let settings = CommandSettings(
             name: "Queue", commandLine: "php artisan queue:listen", subfolder: "api",
             environment: [EnvironmentVariable(name: "APP_ENV", value: "local")],
-            includedInStartAll: false, autoRestart: true, restartWhenFilesChange: ["app/**/*.php", "config/*.php"])
+            includedInStartAll: false, autoRestart: true, restartWhenFilesChange: ["app/**/*.php", "config/*.php"],
+            runInContainer: true, containerName: "laravel")
         let draft = CommandDraft(settings)
         #expect(draft.restartWhenFilesChange == "app/**/*.php\nconfig/*.php")
         #expect(draft.settings == settings)
@@ -184,6 +185,26 @@ import Testing
         draft.restartWhenFilesChange = "\n  vite.config.js  \n\n"
         #expect(draft.settings.environment == [EnvironmentVariable(name: "A", value: "1")])
         #expect(draft.settings.restartWhenFilesChange == ["vite.config.js"])
+    }
+
+    @Test func aContainerCommandRunsThroughDockerExecAndPassesItsVariables() {
+        var settings = CommandSettings(name: "Vite", commandLine: "npm run dev", containerName: "web app")
+        #expect(settings.effectiveCommandLine == "npm run dev")
+        settings.runInContainer = true
+        #expect(settings.effectiveCommandLine == "docker exec -it 'web app' npm run dev")
+        settings.containerName = "web"
+        settings.environment = [EnvironmentVariable(name: "NODE_ENV", value: "development")]
+        #expect(settings.effectiveCommandLine == "docker exec -it -e NODE_ENV web npm run dev")
+    }
+
+    @Test func settingsSavedBeforeContainersExistedRunOnThisMac() throws {
+        let json = """
+            {"name":"Vite","commandLine":"npm run dev","subfolder":"","environment":[],
+             "includedInStartAll":true,"autoRestart":false,"restartWhenFilesChange":[]}
+            """
+        let settings = try JSONDecoder().decode(CommandSettings.self, from: Data(json.utf8))
+        #expect(!settings.runInContainer)
+        #expect(settings.containerName == "")
     }
 
     @Test func draggingACommandInTheListGivesTheIndexTheHelperExpects() {

@@ -154,6 +154,14 @@ private struct CommandBar: View {
                 .lineLimit(1)
                 .layoutPriority(1)
             Pill(text: command.statusText, color: command.status.graphiteColor)
+            if command.settings.runInContainer {
+                Label(command.settings.containerName, systemImage: "shippingbox")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Graphite.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .help("Runs inside the Docker container “\(command.settings.containerName)”")
+            }
             Text("$ \(command.settings.commandLine)")
                 .font(Graphite.mono)
                 .foregroundStyle(Graphite.text)
@@ -163,7 +171,7 @@ private struct CommandBar: View {
                 .padding(.vertical, 3)
                 .background(RoundedRectangle(cornerRadius: 5).fill(Graphite.raised))
                 .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Graphite.line))
-                .help(command.settings.commandLine)
+                .help(command.settings.effectiveCommandLine)
             if command.restartToApply {
                 Pill(text: "Restart to apply", color: Graphite.amber)
                     .help("This Command was edited while Running. It uses the new settings from its next start.")

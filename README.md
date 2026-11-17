@@ -20,9 +20,9 @@ You define **Projects**, give each a list of **Commands**, and control them from
 ## Requirements
 
 - macOS 26 on Apple Silicon
-- Xcode with the macOS 26 SDK
+- Xcode with the macOS 26 SDK, to build from source
 
-DevDev is a personal tool. It is built locally, with no sandbox, signing, notarization or auto-update.
+DevDev is a personal tool. It has no sandbox, no Developer ID signing and no notarization. Every build is signed ad hoc. The App updates itself from the releases of this repository.
 
 ## How it fits together
 
@@ -52,11 +52,36 @@ cd Packages/DevDevCore && swift test
 
 ## Install
 
+### From a release
+
+1. Download `devdev-<version>.dmg` from the [newest release](https://github.com/wojciechgabrys/devdev/releases/latest).
+2. Open it and drag `devdev.app` onto the `Applications` shortcut.
+3. Open `/Applications/devdev.app`. The app is not notarized, so macOS may refuse the first open. Allow it under System Settings > Privacy & Security.
+
+Open the copy in `/Applications`, not the one inside the disk image. The updater cannot replace an app that runs from a read-only volume.
+
+### Updates
+
+Later versions arrive through the updater. The App checks the newest release once a day. When a newer version exists, a window shows its release notes and you click Install. Nothing downloads or installs by itself.
+
+- **Check for Updates…** in the DevDev menu checks at once.
+- **Check for updates automatically** in Settings turns the daily check off and on.
+- An update never stops the Helper. It keeps running with its Processes, and the App shows a banner that the Helper is outdated. Restart the Helper from that banner when you choose.
+- A Debug build has no updater.
+
+**Version 0.2.1 and earlier must be replaced by hand once.** They have no updater. Download the newest DMG and drag `devdev.app` over the old one in `/Applications`. From then on, updates arrive by themselves.
+
+### From source
+
 ```bash
 scripts/install.sh
 ```
 
-This builds the Release configuration for Apple Silicon and copies `devdev.app` to `/Applications`. Pass another folder as the first argument to install elsewhere. A running Helper is left alone; the App shows a banner when it is outdated.
+This builds the Release configuration for Apple Silicon and copies `devdev.app` to `/Applications`. Pass another folder as the first argument to install elsewhere. A running Helper is left alone; the App shows a banner when it is outdated. A build installed this way carries the updater too. It is offered an update only when a release has a higher version.
+
+### Releasing a version
+
+A version bump changes three things together: `DevDevCore.version`, `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`. A test fails when they differ. Pushing a `v<version>` tag makes the release workflow build the DMG, sign it for the updater and attach it to the release with `appcast.xml`.
 
 ## Use with an AI agent
 

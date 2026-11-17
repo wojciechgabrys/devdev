@@ -283,3 +283,62 @@ Open at least three Commands so the tab strip shows three tabs, here called A, B
 - [ ] **Tabs still work as before.**
   1. Move the pointer over a tab that is not selected. It gets the hover highlight and its x appears.
   2. With VoiceOver on, move to a tab. It reads the Command's name, its Project and its status, as a button. <kbd>Ctrl</kbd> + <kbd>Option</kbd> + <kbd>Space</kbd> selects it.
+
+## Updates
+
+Every item here is **not verified** until a person does it with two real tagged releases. The spike in `docs/spike-results.md` drove Sparkle from a script, in a temporary folder, with a local appcast. It never showed Sparkle's window and never used GitHub.
+
+Before any item: `scripts/setup-update-key.sh` was run once, the real public key is in `Config/App-Info.plist`, and the secret `SPARKLE_ED_PRIVATE_KEY` exists. Below, **N** is a released version with the updater (0.2.2 or later) and **N+1** is the next one. Tag N+1 only when an item says so.
+
+- [ ] **A real update: N is installed, N+1 is tagged, Check for Updates… installs it and the App relaunches as N+1.**
+  1. In Safari, download `devdev-N.dmg` from `https://github.com/wojciechgabrys/devdev/releases`. Open it, drag `devdev.app` onto `Applications`, and eject the disk image.
+  2. Open `/Applications/devdev.app`. Allow the first open under System Settings > Privacy & Security if macOS asks. devdev > About DevDev shows version N.
+  3. Add a Project with a Command `sleep 100000` named `Sleeper` and start it. Run `pgrep -x devdevHelper` and note the process ID. Leave it running for the next item.
+  4. In the repo, set `DevDevCore.version`, `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` to N+1, commit, and push `main`. Then run `git tag vN+1` and `git push origin vN+1`, with the real version in place of N+1.
+  5. Wait until the Release workflow is green. Run `gh release view vN+1 --json assets -q '.assets[].name'`. It prints `appcast.xml` and `devdev-N+1.dmg`.
+  6. Run `curl -sIL https://github.com/wojciechgabrys/devdev/releases/latest/download/appcast.xml | grep -i '^HTTP'`. The last line reads `200`.
+  7. In the App, choose devdev > Check for Updates…. Sparkle's window appears and names version N+1 and the installed version N.
+  8. Read the notes in the window. They are the release notes shown on the GitHub page of vN+1.
+  9. Click Install Update, then Install and Relaunch if the window asks. The App quits and opens again by itself.
+  10. devdev > About DevDev shows version N+1. Choose Check for Updates… again: the window says DevDev is up to date.
+- [ ] **After the update, the Helper still runs with its Processes and the App shows the outdated-Helper banner.**
+  1. Do this straight after the item above, before any other step. Run `pgrep -x devdevHelper`. It prints the same process ID as before the update.
+  2. In the relaunched App, `Sleeper` still reads Running, and its output is still there. `pgrep -fl "sleep 100000"` still prints the process.
+  3. A banner says the Helper is outdated. Its button reads "Restart Helper (stops all Processes)". Nothing restarted by itself.
+  4. Stop and Start on `Sleeper` still work with the old Helper.
+  5. Click the button. Every Command reads Stopped, the banner is gone, and `pgrep -x devdevHelper` prints a new process ID.
+- [ ] **The update window shows Markdown notes properly and offers no automatic install.**
+  1. With N installed and N+1 released, choose devdev > Check for Updates….
+  2. In the notes, headings, list items and links are drawn as such. No raw `#`, `*` or `[text](url)` shows.
+  3. The window has no checkbox "Automatically download and install updates in the future".
+  4. Click Remind Me Later. Nothing was downloaded: `ls ~/Library/Caches/dev.devdev.app/org.sparkle-project.Sparkle/` shows no DMG, or the folder does not exist.
+- [ ] **No Gatekeeper or other dialog appears when the updated App opens.**
+  1. Install N from a DMG downloaded with Safari, as in the first item, and update to N+1 from the window.
+  2. Watch the screen while the App relaunches. Record every dialog macOS shows. None is expected.
+  3. Quit the App and open `/Applications/devdev.app` from Finder. It opens with no dialog.
+  4. Run `xattr -lr /Applications/devdev.app | grep -c com.apple.quarantine`. Record the number. The spike saw 0.
+- [ ] **The automatic daily check offers the update without the menu item.**
+  1. With N installed and N+1 not yet tagged, open the App once and choose devdev > Check for Updates…. It says DevDev is up to date. Run `defaults read dev.devdev.app SULastCheckTime` and note the time.
+  2. In Settings, Check for updates automatically is on. Tag and release N+1 as in the first item.
+  3. Leave the App open for at least 24 hours after the noted time, with the Mac awake. Do not choose Check for Updates….
+  4. Sparkle's window appears by itself and offers N+1 with its notes. `defaults read dev.devdev.app SULastCheckTime` shows a newer time.
+  5. Click Remind Me Later, quit the App and open it again more than 24 hours later. The window appears again without the menu item.
+- [ ] **The Settings switch turns automatic checks off and on, and survives a relaunch.**
+  1. In an installed release, press <kbd>Cmd</kbd> + <kbd>,</kbd>. Under Updates, the version is shown and Check for updates automatically is on. No "install automatically" switch exists.
+  2. Turn the switch off. `defaults read dev.devdev.app SUEnableAutomaticChecks` prints `0`.
+  3. Quit the App with <kbd>Cmd</kbd> + <kbd>Q</kbd> and open it again. The switch is still off. devdev > Check for Updates… still works by hand.
+  4. With a newer release out, leave the App open for more than 24 hours. No update window appears by itself.
+  5. Turn the switch on. `defaults read dev.devdev.app SUEnableAutomaticChecks` prints `1`. Quit and open the App again: the switch is still on.
+  6. Choose Stop All and Quit, open the App and open Settings before the Helper connects, or with the Helper force quit. The Updates section still shows the version and the switch.
+- [ ] **Whether macOS asks again for notification or other permissions after an update. Record what happened.**
+  1. Before the update, with N installed: notifications are allowed for `devdevHelper` in System Settings > Notifications, and a crash banner appears for a Command with the line `sleep 2; exit 1`.
+  2. Update to N+1 from the window. Record every permission prompt macOS shows during the relaunch. Write down its exact text.
+  3. Crash the Command again while the old Helper still runs. Record whether the banner appears.
+  4. Click "Restart Helper (stops all Processes)", so the N+1 Helper runs. Crash the Command again. Record whether the banner appears, and whether a new prompt came first.
+  5. Record whether System Settings > Notifications still lists `devdevHelper` as allowed, and whether it now lists it twice.
+  6. Start a Command that reads a protected folder, such as `ls ~/Documents`. Record whether macOS asks again for access it had already granted to N.
+  7. With Launch at login on, log out and in. Record whether the N+1 Helper starts, and whether macOS shows a "Background Items Added" notice again.
+- [ ] **A Debug build shows no update item and no switch.**
+  1. Run the `devdev` scheme from Xcode. Open the devdev menu. Below About DevDev there is no Check for Updates… item.
+  2. Press <kbd>Cmd</kbd> + <kbd>,</kbd>. The Updates section shows the version and no Check for updates automatically switch.
+  3. Leave the Debug App open for a minute. No update window appears. `defaults read dev.devdev.app.debug SULastCheckTime` fails, because the key does not exist.

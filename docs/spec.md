@@ -12,7 +12,7 @@ Inspirations: [Solo](https://soloterm.com/) for process management, [F-Bar](http
 
 ## 1. Constraints
 
-- Single user: the author, on their own Mac. Built locally from Xcode. No App Sandbox, no notarization, no update mechanism, no licensing.
+- Single user: the author, on their own Mac. Built locally from Xcode. No App Sandbox, no Developer ID signing, no notarization, no licensing. The App updates itself with Sparkle, from an appcast attached to the newest GitHub release.
 - macOS 26 only. Swift, SwiftUI first; drop to AppKit where SwiftUI cannot do the job (the output view, possibly the status item). Use current APIs freely; no fallbacks for older systems.
 - Standard macOS look. Follow the system appearance.
 - The project must build and test from the command line so an agent can verify its own work. The build pipeline runs exactly these, from the repo root, and all three must keep passing:
@@ -35,7 +35,7 @@ Do not build these, even if they look easy:
 - Global hotkey or command palette.
 - Writing output to log files.
 - Discovery for stacks other than Laravel and Node.
-- Signing, notarizing, auto-update.
+- Developer ID signing and notarizing. Auto-update is in scope: the App has a Sparkle updater.
 - Opening a Project's URL in a browser, port detection.
 - Agents editing configuration over MCP.
 - Starting Processes at login or restoring them after a reboot.

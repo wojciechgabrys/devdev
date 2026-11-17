@@ -155,6 +155,8 @@ Discovery reads a Project's folder and proposes Commands. It runs when a Project
 
 It always ends in a checklist the user confirms. Discovery never creates, changes or removes a Command by itself.
 
+Cancelling the checklist shown right after a Project was added removes that Project again, so no empty Project is left in the sidebar. Cancelling a Rescan changes nothing.
+
 ### Docker
 
 When the Project folder itself holds `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml` or a `Dockerfile`, the checklist asks, above the proposed Commands, whether to run them inside a Docker container. Ticking it reveals a container name field, which Apply then needs. Every Command the checklist adds gets "Run inside a Docker container" on, with that name.

@@ -316,9 +316,14 @@ public final class WindowModel {
         }
     }
 
-    /// The user closed the checklist without confirming. Nothing changes.
-    public func dismissDiscovery() {
+    /// The user closed the checklist without confirming. No Command is added or removed.
+    /// Closing it right after adding a Project takes the Project back out, so no empty Project is left behind.
+    public func dismissDiscovery() async {
+        guard let checklist = discoveryChecklist else { return }
         discoveryChecklist = nil
+        if checklist.reason == .projectAdded {
+            await removeProject(checklist.plan.projectID)
+        }
     }
 
     /// The Helper stops the Project's Processes, then removes it.

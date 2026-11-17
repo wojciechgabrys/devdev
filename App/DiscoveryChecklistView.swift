@@ -5,7 +5,6 @@ import SwiftUI
 struct DiscoveryChecklistView: View {
     let model: WindowModel
     @State var checklist: DiscoveryChecklist
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -63,14 +62,14 @@ struct DiscoveryChecklistView: View {
             Divider()
             HStack {
                 Spacer()
+                // Both close the sheet by clearing the model's checklist, not with `dismiss()`.
+                // `dismiss()` would reach the sheet's binding, which treats it as Cancel.
                 Button("Cancel", role: .cancel) {
-                    model.dismissDiscovery()
-                    dismiss()
+                    Task { await model.dismissDiscovery() }
                 }
                 .keyboardShortcut(.cancelAction)
                 Button(checklist.plan.isEmpty ? "OK" : "Apply") {
                     let confirmed = checklist
-                    dismiss()
                     Task { await model.applyDiscovery(confirmed) }
                 }
                 .keyboardShortcut(.defaultAction)

@@ -61,7 +61,7 @@ struct MainWindow: View {
         .sheet(
             item: Binding(
                 get: { model.discoveryChecklist },
-                set: { if $0 == nil { model.dismissDiscovery() } })
+                set: { if $0 == nil { Task { await model.dismissDiscovery() } } })
         ) { checklist in
             DiscoveryChecklistView(model: model, checklist: checklist)
         }

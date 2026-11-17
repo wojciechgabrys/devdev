@@ -448,7 +448,7 @@ final class HelperStandIn: @unchecked Sendable {
         }
     }
 
-    @Test func dismissingTheChecklistAddsNothing() async throws {
+    @Test func cancellingTheChecklistOfANewProjectTakesTheProjectBackOut() async throws {
         try await withStandIn(devList: try FakeDevListRunner(fixture: "default.json")) { helper in
             try makeLaravelNodeProject(helper)
             let model = helper.makeModel()
@@ -456,11 +456,33 @@ final class HelperStandIn: @unchecked Sendable {
             await model.addProject(folder: helper.projectFolder)
             #expect(model.discoveryChecklist != nil)
 
-            model.dismissDiscovery()
+            await model.dismissDiscovery()
+
+            #expect(model.discoveryChecklist == nil)
+            try await waitUntil("the Project is gone") { model.state.projects.isEmpty }
+            let saved = try ConfigurationStore(file: helper.paths.configurationFile).load()
+            #expect(saved.projects.isEmpty)
+        }
+    }
+
+    @Test func cancellingARescanKeepsTheProjectAndChangesNothing() async throws {
+        try await withStandIn(devList: try FakeDevListRunner(fixture: "default.json")) { helper in
+            try makeLaravelNodeProject(helper)
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+            await model.applyDiscovery(try #require(model.discoveryChecklist))
+            try await waitUntil("four Commands show") { model.state.selectedProject?.commands.count == 4 }
+            let project = try #require(model.state.selectedProject)
+
+            await model.rescan(project.id)
+            #expect(model.discoveryChecklist != nil)
+            await model.dismissDiscovery()
 
             #expect(model.discoveryChecklist == nil)
             let saved = try ConfigurationStore(file: helper.paths.configurationFile).load()
-            #expect(saved.projects.first?.commands.isEmpty == true)
+            #expect(saved.projects.map(\.id) == [project.id])
+            #expect(saved.projects.first?.commands.count == 4)
         }
     }
 
@@ -491,7 +513,7 @@ final class HelperStandIn: @unchecked Sendable {
             let model = helper.makeModel()
             await model.connect()
             await model.addProject(folder: helper.projectFolder)
-            model.dismissDiscovery()
+            await model.applyDiscovery(try #require(model.discoveryChecklist))
 
             await model.addProject(folder: helper.projectFolder)
 

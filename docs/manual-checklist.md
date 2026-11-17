@@ -51,13 +51,13 @@ SwiftTerm's build plug-in must be trusted once per Mac in Xcode before any build
   2. Drag the same folder again. No second Project appears and the existing one is selected.
   3. Drag a file, not a folder. An alert says there is no folder at that path.
   4. Select a Project with a Running Command and click −. The question names the Project and says its Running Commands are stopped first. Confirm. The Project is gone and `pgrep` shows its Processes ended.
-- [ ] **Editing, deleting and reordering Commands.**
+- [ ] **Editing and deleting Commands, and their sorted order.**
   1. Start a Command. Right-click it, choose Edit…, change the command line and save. The row still reads Running and shows "restart to apply".
   2. Click Restart. The hint is gone and the new command line runs.
   3. Edit it again and fill every field: subfolder, one environment variable, both switches, one glob pattern. Save, reopen the form: every field kept its value.
   4. Add a Command with a name the Project already uses. The form stays open and an alert names the clash.
   5. Right-click a Running Command and choose Delete…. The question says it is stopped first. Confirm. The row is gone and its Process ended.
-  6. Drag a Command to another place in the list. Quit and reopen the App: the order is kept.
+  6. In a Project with Commands `queue` and `vite`, add a Command named `Server`. It appears between them, not at the end. Rename it to `worker`: the row moves below `vite` at once. Quit and reopen the App: the Commands are still sorted by name.
 - [ ] **Stop All and Quit ends everything.**
   1. Start two Commands. Choose devdev > Stop All and Quit.
   2. The App quits. Activity Monitor shows no `devdevHelper`, and `pgrep` shows no Process of either Command.
@@ -99,7 +99,7 @@ Run every check here with the App closed, unless a step says to open it. Install
   3. Click Restart All. The row reads Running again. In the App later, `Vite`'s output shows a `── restarted HH:MM:SS ──` line.
   4. Click Stop All. The dot turns grey and the status reads Stopped. `pgrep -fl vite` prints nothing.
 - [ ] **Expanding a Project shows its Commands with status and Start, Restart, Stop.**
-  1. Click the Project's name or its arrow. Its Commands appear below it, in the App's order, each with a dot and a status.
+  1. Click the Project's name or its arrow. Its Commands appear below it, sorted by name, each with a dot and a status.
   2. Click Start on `Vite`. It reads Running, and the Project reads Partly Running if `Fails` is included in Start All.
   3. Click Restart on `Vite`, then Stop. It reads Running, then Stopped.
   4. Click the Project's name again. The Commands are hidden.
@@ -192,7 +192,7 @@ Install first with `scripts/install.sh`. Use a Project named `shop` with three C
 - [ ] **Adding a real Laravel project runs `dev:list` through your login shell and shows the checklist.**
   1. Remove the Laravel + Vite project from Phase 2 if it is still there, then add its folder again with the + button.
   2. Within a few seconds a sheet titled `Commands found in this Project` lists `server`, `queue`, `logs` (only with `laravel/pail` installed) and `vite`, all ticked. There is no `php artisan dev` row and no second `npm run dev` row.
-  3. Untick `logs` and click Apply. Exactly the three ticked Commands appear, in that order.
+  3. Untick `logs` and click Apply. Exactly the three ticked Commands appear, sorted by name: `queue`, `server`, `vite`.
   4. Start All. Each runs as it does from Terminal, which shows that `php` was found through your login shell.
 - [ ] **Cancel adds nothing.**
   1. Add another Laravel folder. When the sheet appears, click Cancel. The Project is there with no Commands.

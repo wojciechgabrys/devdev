@@ -358,11 +358,6 @@ public final class WindowModel {
         await perform(.deleteCommand(commandID: commandID))
     }
 
-    /// A drag in the Commands list. `toOffset` is the row the Command was dropped before.
-    public func moveCommand(_ commandID: UUID, from: Int, toOffset: Int) async {
-        await perform(.moveCommand(commandID: commandID, toIndex: CommandMove.targetIndex(from: from, toOffset: toOffset)))
-    }
-
     // MARK: - Settings
 
     public func setShowMenubarIcon(_ on: Bool) async {

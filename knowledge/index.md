@@ -7,10 +7,10 @@ title: "Knowledge"
 
 # Knowledge
 
-- [Decisions](decisions/index.md): 18 documents
-- [Terms](terms/index.md): 9 documents
-- [Features](features/index.md): 3 documents
-- [Attempts](attempts/index.md): 10 documents
-- [Specs](specs/index.md): 2 documents
-- [Slices](slices/index.md): 14 documents
+- [Decisions](decisions/index.md): 22 documents
+- [Terms](terms/index.md): 10 documents
+- [Features](features/index.md): 4 documents
+- [Attempts](attempts/index.md): 11 documents
+- [Specs](specs/index.md): 3 documents
+- [Slices](slices/index.md): 18 documents
 - [Log](log.md): what each feature recorded, oldest first

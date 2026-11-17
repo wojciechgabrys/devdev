@@ -187,7 +187,7 @@ final class HelperStandIn: @unchecked Sendable {
 
             #expect(model.state.selectedProject?.id == shop)
             try await waitUntil("both Projects show") { model.state.projects.count == 2 }
-            #expect(model.state.projects.map(\.name) == ["shop", "blog"])
+            #expect(model.state.projects.map(\.name) == ["blog", "shop"])
         }
     }
 
@@ -231,24 +231,6 @@ final class HelperStandIn: @unchecked Sendable {
 
             #expect(!processIsAlive(pid))
             try await waitUntil("the Command is gone") { model.state.selectedProject?.commands.isEmpty == true }
-        }
-    }
-
-    @Test func draggingACommandReordersItInTheHelper() async throws {
-        try await withStandIn { helper in
-            let (model, first) = try await modelWithCommand(helper, "true")
-            let projectID = try #require(model.state.selectedProject?.id)
-            var draft = CommandDraft()
-            draft.name = "Second"
-            draft.commandLine = "true"
-            let answer4 = await model.addCommand(to: projectID, draft: draft)
-            #expect(answer4)
-
-            await model.moveCommand(first, from: 0, toOffset: 2)
-
-            try await waitUntil("the order changed") {
-                model.state.selectedProject?.commands.map(\.settings.name) == ["Second", "Main"]
-            }
         }
     }
 
@@ -470,7 +452,7 @@ final class HelperStandIn: @unchecked Sendable {
             #expect(model.discoveryChecklist == nil)
             try await waitUntil("three Commands show") { model.state.selectedProject?.commands.count == 3 }
             let commands = try #require(model.state.selectedProject?.commands)
-            #expect(commands.map(\.settings.name) == ["server", "queue", "vite"])
+            #expect(commands.map(\.settings.name) == ["queue", "server", "vite"])
             #expect(commands.map(\.madeByDiscovery) == [true, true, true])
         }
     }
@@ -571,18 +553,92 @@ final class HelperStandIn: @unchecked Sendable {
             #expect(checklist.reason == .rescan)
             #expect(checklist.plan.add.map(\.settings.name) == ["stripe", "horizon", "scheduler", "watch:docs"])
             // `npm run dev` is still proposed, from package.json, so vite stays.
-            #expect(checklist.plan.remove.map(\.name) == ["server", "logs"])
+            #expect(checklist.plan.remove.map(\.name) == ["logs", "server"])
             #expect(checklist.removeChecked == [false, false])
 
             checklist.addChecked = [false, true, false, false]
-            checklist.removeChecked = [true, false]
+            checklist.removeChecked = [false, true]
             await model.applyDiscovery(checklist)
 
             try await waitUntil("the Commands change") {
-                model.state.selectedProject?.commands.map(\.settings.name) == ["queue", "logs", "vite", "horizon"]
+                model.state.selectedProject?.commands.map(\.settings.name) == ["horizon", "logs", "queue", "vite"]
             }
             let after = try #require(model.state.selectedProject?.commands)
-            #expect(after.map(\.madeByDiscovery) == [false, true, true, true])
+            #expect(after.map(\.madeByDiscovery) == [true, true, false, true])
+        }
+    }
+
+    // MARK: - The Helper's order
+
+    private func add(_ name: String, to projectID: UUID, in model: WindowModel) async {
+        var draft = CommandDraft()
+        draft.name = name
+        draft.commandLine = "true"
+        let added = await model.addCommand(to: projectID, draft: draft)
+        #expect(added)
+    }
+
+    @Test func theProjectTreeAndGoToCommandShowProjectsAndCommandsInTheHelpersSortedOrder() async throws {
+        try await withStandIn { helper in
+            let blog = helper.root.appendingPathComponent("blog", isDirectory: true)
+            try FileManager.default.createDirectory(at: blog, withIntermediateDirectories: true)
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+            let shopID = try #require(model.state.selectedProject?.id)
+            for name in ["worker 10", "Build", "api", "worker 2"] {
+                await add(name, to: shopID, in: model)
+            }
+            await model.addProject(folder: blog)
+            let blogID = try #require(model.state.selectedProject?.id)
+            for name in ["vite", "Queue"] {
+                await add(name, to: blogID, in: model)
+            }
+            try await waitUntil("every Command shows") {
+                model.state.projects.map(\.commands.count) == [2, 4]
+            }
+
+            #expect(model.state.projects.map(\.name) == ["blog", "shop"])
+            #expect(model.state.projects[0].commands.map(\.settings.name) == ["Queue", "vite"])
+            #expect(model.state.projects[1].commands.map(\.settings.name) == ["api", "Build", "worker 2", "worker 10"])
+
+            let everyCommand = CommandSearch.results(for: "", in: model.state.snapshot)
+            #expect(everyCommand.map(\.commandName) == ["Queue", "vite", "api", "Build", "worker 2", "worker 10"])
+            let workers = CommandSearch.results(for: "worker", in: model.state.snapshot)
+            #expect(workers.map(\.commandName) == ["worker 2", "worker 10"])
+        }
+    }
+
+    @Test func renamingTheSelectedCommandSoItsRowMovesKeepsItSelectedAndItsTabInPlace() async throws {
+        try await withStandIn { helper in
+            let (model, main) = try await modelWithCommand(helper, "true")
+            let projectID = try #require(model.state.selectedProject?.id)
+            await add("Alpha", to: projectID, in: model)
+            await add("Zulu", to: projectID, in: model)
+            try await waitUntil("the three Commands show") {
+                model.state.selectedProject?.commands.map(\.settings.name) == ["Alpha", "Main", "Zulu"]
+            }
+            let commands = try #require(model.state.selectedProject?.commands)
+            let (alpha, zulu) = (commands[0].id, commands[2].id)
+            // Open the three tabs in a known order, with the Command to rename in the middle and selected.
+            for id in model.state.tabs { await model.closeTab(id) }
+            for id in [main, alpha, zulu, alpha] { await model.select(command: id) }
+            #expect(model.state.tabs == [main, alpha, zulu])
+            #expect(model.state.selectedCommandID == alpha)
+
+            var draft = CommandDraft(try #require(model.state.selectedCommand).settings)
+            draft.name = "Zz"
+            let renamed = await model.updateCommand(alpha, draft: draft)
+            #expect(renamed)
+            try await waitUntil("the row moved to the end") {
+                model.state.selectedProject?.commands.map(\.id) == [main, zulu, alpha]
+            }
+
+            #expect(model.state.selectedProject?.commands.map(\.settings.name) == ["Main", "Zulu", "Zz"])
+            #expect(model.state.selectedCommandID == alpha)
+            #expect(model.state.selectedCommand?.settings.name == "Zz")
+            #expect(model.state.tabs == [main, alpha, zulu])
+            #expect(model.state.tab(number: 2) == alpha)
         }
     }
 }

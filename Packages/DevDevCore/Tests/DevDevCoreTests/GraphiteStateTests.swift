@@ -153,6 +153,25 @@ import Testing
         #expect(names == ["serve", "queue", "vite", "serve", "horizon"])
     }
 
+    @Test func goToCommandResultsWithEqualScoresComeOutInSnapshotOrder() {
+        let shopID = UUID()
+        let billingID = UUID()
+        // Not in order of name, so a second sort by name here would show.
+        let snapshot = HelperSnapshot(projects: [
+            ProjectSnapshot(
+                id: shopID, name: "shop", folder: "/tmp/shop", status: .stopped,
+                commands: ["zeta worker", "mail", "alpha worker"].map { Self.command($0, in: shopID) }),
+            ProjectSnapshot(
+                id: billingID, name: "billing", folder: "/tmp/billing", status: .stopped,
+                commands: ["beta worker", "worker one"].map { Self.command($0, in: billingID) }),
+        ])
+
+        let names = CommandSearch.results(for: "worker", in: snapshot).map(\.commandName)
+
+        // "worker one" starts with the word, so it scores better. The other three score the same.
+        #expect(names == ["worker one", "zeta worker", "alpha worker", "beta worker"])
+    }
+
     @Test func everyWordMustMatchAndNameMatchesComeFirst() {
         let f = Fixture()
         let snapshot = f.snapshot()

@@ -425,11 +425,3 @@ public struct CommandDraft: Sendable, Equatable {
             containerName: containerName.trimmingCharacters(in: .whitespaces))
     }
 }
-
-/// Turns a drag in a list into the index `moveCommand` takes.
-public enum CommandMove {
-    /// `toOffset` counts rows with the dragged one still in place. The Helper counts them without it.
-    public static func targetIndex(from: Int, toOffset: Int) -> Int {
-        toOffset > from ? toOffset - 1 : toOffset
-    }
-}

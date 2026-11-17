@@ -148,9 +148,9 @@ import Testing
             #expect(
                 result.text == """
                     Shop: Running
-                    - Vite: Running
                     - Queue Worker: Running
                     - Scheduler: Stopped
+                    - Vite: Running
                     """)
         }
     }
@@ -163,9 +163,9 @@ import Testing
             #expect(
                 result.text == """
                     Shop: Stopped
-                    - Vite: Stopped
                     - Queue Worker: Stopped
                     - Scheduler: Stopped
+                    - Vite: Stopped
                     """)
         }
     }
@@ -178,9 +178,9 @@ import Testing
             #expect(
                 result.text == """
                     Shop: Partly Running
-                    - Vite: Running
                     - Queue Worker: Stopped
                     - Scheduler: Stopped
+                    - Vite: Running
                     """)
         }
     }
@@ -266,7 +266,7 @@ import Testing
         try await withTools(shop) { _, tools in
             let result = await tools.call("stop_command", arguments: ["command": .string("queue")])
             #expect(result.isError)
-            #expect(result.text == "No Command named 'queue' in Project 'Shop'. Commands: Vite, Queue Worker, Scheduler.")
+            #expect(result.text == "No Command named 'queue' in Project 'Shop'. Commands: Queue Worker, Scheduler, Vite.")
         }
     }
 
@@ -282,7 +282,7 @@ import Testing
         try await withTools(shop) { _, tools in
             let result = await tools.call("start_command", arguments: [:])
             #expect(result.isError)
-            #expect(result.text == "Name a Command with the 'command' argument. Commands in Shop: Vite, Queue Worker, Scheduler.")
+            #expect(result.text == "Name a Command with the 'command' argument. Commands in Shop: Queue Worker, Scheduler, Vite.")
         }
     }
 
@@ -340,6 +340,37 @@ import Testing
             let result = await tools.call("delete_project", arguments: [:])
             #expect(result.isError)
             #expect(result.text.hasPrefix("There is no tool named 'delete_project'."))
+        }
+    }
+
+    // MARK: - The Helper's order
+
+    @Test func listProjectsAndGetProjectShowProjectsAndCommandsInTheHelpersSortedOrder() async throws {
+        let added = ["worker 10", "Build", "api", "worker 2"].map { CommandSettings(name: $0, commandLine: "true") }
+        try await withTools(added) { h, tools in
+            var folders: [String: String] = ["Shop": h.projectFolder.path]
+            for name in ["web 10", "Admin", "web 2"] {
+                let folder = h.folder.appendingPathComponent(name, isDirectory: true)
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                folders[name] = try await h.engine.addProject(folder: folder.path, name: name).folder
+            }
+
+            let list = await tools.call("list_projects", arguments: [:])
+            expectSuccess(list)
+            #expect(
+                list.text.split(separator: "\n").map(String.init)
+                    == ["Admin", "Shop", "web 2", "web 10"].map { "\($0): Stopped, folder \(folders[$0] ?? "")" })
+
+            let project = await tools.call("get_project", arguments: [:])
+            expectSuccess(project)
+            #expect(
+                project.text.split(separator: "\n").map(String.init) == [
+                    "Shop: Stopped, folder \(h.projectFolder.path)",
+                    "- api: Stopped, never started",
+                    "- Build: Stopped, never started",
+                    "- worker 2: Stopped, never started",
+                    "- worker 10: Stopped, never started",
+                ])
         }
     }
 }

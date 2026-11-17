@@ -37,7 +37,6 @@ public enum HelperRequest: Codable, Sendable, Equatable {
     case addCommand(projectID: UUID, settings: CommandSettings, madeByDiscovery: Bool? = nil)
     case updateCommand(commandID: UUID, settings: CommandSettings)
     case deleteCommand(commandID: UUID)
-    case moveCommand(commandID: UUID, toIndex: Int)
 
     /// Runs Discovery on the Project's folder. Answered with `discovery`. Changes nothing.
     case discover(projectID: UUID)
@@ -53,7 +52,7 @@ public enum HelperRequest: Codable, Sendable, Equatable {
         case .hello, .snapshot, .subscribeOutput, .unsubscribeOutput, .plainOutput, .resize, .settings, .discover:
             false
         case .start, .stop, .restart, .startAll, .stopAll, .restartAll, .stopAllAndQuit, .addProject, .renameProject,
-            .removeProject, .addCommand, .updateCommand, .deleteCommand, .moveCommand, .updateSettings:
+            .removeProject, .addCommand, .updateCommand, .deleteCommand, .updateSettings:
             true
         }
     }
@@ -170,8 +169,6 @@ extension HelperEngine {
             case .deleteCommand(let commandID):
                 try await deleteCommand(commandID, origin: actingOrigin)
                 return .ok
-            case .moveCommand(let commandID, let toIndex):
-                return .project(try await moveCommand(commandID, toIndex: toIndex))
             case .discover(let projectID):
                 return .discovery(try await discover(projectID))
             case .settings:

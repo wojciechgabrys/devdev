@@ -72,6 +72,7 @@ Put the logic in a Swift package with tests, and keep the UI targets thin:
 
 - A folder plus its Commands. Fields: name (defaults to the folder name), folder path.
 - One folder belongs to at most one Project. Adding a folder that is already a Project selects the existing one.
+- Projects are always sorted by name, by the same rule as Commands (below). Projects with the same name keep the order they were added in.
 - Add by folder picker or by dragging a folder onto the window. Deleting a Project first stops its Processes, after a confirmation.
 
 ### Command
@@ -88,7 +89,7 @@ Put the logic in a Swift package with tests, and keep the UI targets thin:
 | Run inside a Docker container | Switch. Off by default. When on, the line runs as `docker exec -it [-e VAR …] CONTAINER <command line>`, with `-e` for each environment variable. |
 | Container name | Needed when the switch above is on; disabled otherwise. Kept when the switch is turned off. |
 
-Commands have a stable order that the user can rearrange; Start All starts them in that order.
+Commands are always sorted by name, the way Finder sorts file names: case is ignored and numbers compare by value, so `worker 2` comes before `worker 10`. Start All starts them in that order. The user cannot change the order by hand.
 
 ### Running a Command
 
@@ -189,7 +190,7 @@ Show a checklist with two groups: Commands that Discovery proposes and the Proje
 The Graphite look: a dark pro-tool window, with a matching light palette when macOS is in Light Mode. Chosen from five prototypes (branch `prototype/ui-redesign`).
 
 1. **Title strip** — the selected Command and its Project, and a **Go to Command** field (Cmd-K): type part of a Command's or Project's name, pick with the arrows, press Return.
-2. **Project tree** — every Project as a folder you expand into its Commands. A Project row shows its name and how many Commands run; hovering shows Start All / Restart All / Stop All. A Command row shows its status, name, and how long it has run or how it ended. Context menus hold add, edit, delete, reorder (Move Up / Move Down), Rescan, Show in Finder and Remove Project. Editing is a form with the fields from section 4.
+2. **Project tree** — every Project as a folder you expand into its Commands. A Project row shows its name and how many Commands run; hovering shows Start All / Restart All / Stop All. A Command row shows its status, name, and how long it has run or how it ended. Context menus hold add, edit, delete, Rescan, Show in Finder and Remove Project. Editing is a form with the fields from section 4.
 3. **Output tabs** — each opened Command gets a tab, from any Project. Closing the selected tab selects its right neighbour, else its left. A middle click closes the tab under the pointer. Cmd-W closes the selected tab; with no tab open it closes the window. Cmd-1 to Cmd-9 show a tab by its place from the left, Cmd-0 the last one. Cmd-Shift-[ and ] move between tabs.
 4. **Command bar** — the Command's Project and name, status with exit code when there is one, command line, restart-to-apply, auto-restart and file-watch hints, Start / Restart / Stop, and a menu with the rest.
 5. **Output** of the selected Command (section 5).

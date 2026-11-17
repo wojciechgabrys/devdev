@@ -93,7 +93,7 @@ Steps for each item are in `docs/manual-checklist.md`. Every item is **not verif
 - [ ] **Not verified.** A real Laravel + Vite project can be added, started, read, restarted and stopped.
 - [ ] **Not verified.** Quitting and reopening the App keeps the same Processes and their earlier output.
 - [ ] **Not verified.** Adding and removing Projects by hand.
-- [ ] **Not verified.** Editing, deleting and reordering Commands.
+- [ ] **Not verified.** Editing and deleting Commands, and their sorted order.
 - [ ] **Not verified.** Stop All and Quit ends everything.
 - [ ] **Not verified.** The outdated-Helper banner appears after a reinstall and never restarts by itself.
 - [ ] **Not verified.** A Helper that dies is shown, and can be started again.

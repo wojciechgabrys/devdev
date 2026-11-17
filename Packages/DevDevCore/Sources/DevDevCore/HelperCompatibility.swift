@@ -74,7 +74,7 @@ public struct HelperLocation: Sendable, Equatable {
         guard fileExists(helperExecutable.path) else {
             let advice =
                 flavor == .release
-                ? "Run scripts/install.sh to install devdev in /Applications." : "Build the devdev scheme again."
+                ? "Run scripts/install.sh to install DevDev in /Applications." : "Build the devdev scheme again."
             throw HelperError(
                 code: HelperError.connectionFailed,
                 message: "There is no Helper at \(helperBundle.path). \(advice)")

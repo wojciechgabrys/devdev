@@ -22,7 +22,7 @@ final class SystemNotifications: NSObject, NotificationPoster, UNUserNotificatio
         center.requestAuthorization(options: [.alert, .sound]) { granted, error in
             if !granted {
                 let reason = error.map { " (\($0.localizedDescription))" } ?? ""
-                FileHandle.standardError.write(Data("devdev Helper: notifications are not allowed\(reason)\n".utf8))
+                FileHandle.standardError.write(Data("DevDev Helper: notifications are not allowed\(reason)\n".utf8))
             }
         }
     }
@@ -37,7 +37,7 @@ final class SystemNotifications: NSObject, NotificationPoster, UNUserNotificatio
         UNUserNotificationCenter.current().add(request) { error in
             if let error {
                 FileHandle.standardError.write(
-                    Data("devdev Helper: a notification could not be posted: \(error.localizedDescription)\n".utf8))
+                    Data("DevDev Helper: a notification could not be posted: \(error.localizedDescription)\n".utf8))
             }
         }
     }

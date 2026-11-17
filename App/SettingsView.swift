@@ -38,12 +38,12 @@ struct SettingsView: View {
                                 get: { settings.notifications[kind] },
                                 set: { on in Task { await model.setNotification(kind, on: on) } }))
                     }
-                    Text("A click in devdev never sends Started, Restarted or Stopped. Crashed and Finished always do.")
+                    Text("A click in DevDev never sends Started, Restarted or Stopped. Crashed and Finished always do.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             } else {
-                Text("Settings show once devdev is connected to the Helper.")
+                Text("Settings show once DevDev is connected to the Helper.")
                     .foregroundStyle(.secondary)
             }
             Section("MCP") {

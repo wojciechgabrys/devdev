@@ -1,4 +1,4 @@
-# devdev
+# DevDev
 
 A macOS app that starts, stops and watches the dev servers a web project needs while you work on it.
 

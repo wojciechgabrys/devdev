@@ -16,7 +16,7 @@ import Testing
                 }
                 .frame(maxHeight: 420)
                 Divider()
-                Text("Open devdev").padding(10)
+                Text("Open DevDev").padding(10)
                 Text("Stop All and Quit").padding(10)
             }
             .frame(width: 340)

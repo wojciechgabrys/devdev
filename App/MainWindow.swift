@@ -90,7 +90,7 @@ struct MainWindow: View {
             Text(project.removeConfirmation.message)
         }
         .alert(
-            "devdev",
+            "DevDev",
             isPresented: Binding(
                 get: { model.errorMessage != nil },
                 set: { if !$0 { model.errorMessage = nil } })
@@ -134,7 +134,7 @@ struct TitleStrip: View {
                 .font(.system(size: 12.5))
                 .lineLimit(1)
         } else {
-            Text("devdev").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Graphite.secondary)
+            Text("DevDev").font(.system(size: 12.5, weight: .semibold)).foregroundStyle(Graphite.secondary)
         }
     }
 

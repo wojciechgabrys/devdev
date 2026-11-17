@@ -26,7 +26,7 @@ enum HelperMain {
             // One Helper per data folder. The one that runs keeps its Processes.
             exit(0)
         } catch {
-            FileHandle.standardError.write(Data("devdev Helper could not start: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("DevDev Helper could not start: \(error)\n".utf8))
             exit(1)
         }
 

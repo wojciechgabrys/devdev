@@ -78,7 +78,7 @@ public struct MCPTools: Sendable {
 
     public static let definitions: [MCPToolDefinition] = [
         MCPToolDefinition(
-            name: "list_projects", description: "Every devdev Project with its folder and status.",
+            name: "list_projects", description: "Every DevDev Project with its folder and status.",
             properties: [
                 .init(
                     name: "project", kind: .string,
@@ -158,7 +158,7 @@ public struct MCPTools: Sendable {
         } catch let error as HelperError {
             return MCPToolResult(text: error.message, isError: true)
         } catch {
-            return MCPToolResult(text: "devdev could not reach its Helper: \(error)", isError: true)
+            return MCPToolResult(text: "DevDev could not reach its Helper: \(error)", isError: true)
         }
     }
 
@@ -252,7 +252,7 @@ public struct MCPTools: Sendable {
         let project = try await resolveProject(arguments)
         let names = project.commands.map(\.settings.name).joined(separator: ", ")
         guard !project.commands.isEmpty else {
-            throw ToolError("Project '\(project.name)' has no Commands yet. Add them in the devdev App.")
+            throw ToolError("Project '\(project.name)' has no Commands yet. Add them in the DevDev App.")
         }
         guard case .string(let name)? = arguments["command"], !name.isEmpty else {
             throw ToolError("Name a Command with the 'command' argument. Commands in \(project.name): \(names).")
@@ -268,7 +268,7 @@ public struct MCPTools: Sendable {
             == .orderedSame
     }
 
-    private static let noProjects = "There are no Projects in devdev yet. Add one in the devdev App."
+    private static let noProjects = "There are no Projects in DevDev yet. Add one in the DevDev App."
 
     // MARK: - Talking to the Helper
 
@@ -299,7 +299,7 @@ public struct MCPTools: Sendable {
         return project
     }
 
-    private static let unexpected = ToolError("The devdev Helper gave an answer this devdev CLI does not understand.")
+    private static let unexpected = ToolError("The DevDev Helper gave an answer this DevDev CLI does not understand.")
 
     private func integer(_ name: String, in arguments: [String: MCPArgument]) throws -> Int? {
         switch arguments[name] {

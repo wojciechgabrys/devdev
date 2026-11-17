@@ -16,7 +16,7 @@ struct MenubarPanelView: View {
         VStack(alignment: .leading, spacing: 0) {
             filterField
             if model.panel.rows.isEmpty {
-                Text("No Projects yet. Add one in devdev.")
+                Text("No Projects yet. Add one in DevDev.")
                     .font(.system(size: 12))
                     .foregroundStyle(Graphite.secondary)
                     .padding(.horizontal, 14)
@@ -51,7 +51,7 @@ struct MenubarPanelView: View {
             }
             Rectangle().fill(Graphite.line).frame(height: 1)
             VStack(spacing: 1) {
-                FooterItem(title: "Open devdev", shortcut: "⌘O") {
+                FooterItem(title: "Open DevDev", shortcut: "⌘O") {
                     close()
                     opener.openApp()
                 }
@@ -209,7 +209,7 @@ private struct CommandRow: View {
         .contentShape(Rectangle())
         .onTapGesture(perform: open)
         .onHover { isHovering = $0 }
-        .help("\(command.statusText). Click to show the output in devdev.")
+        .help("\(command.statusText). Click to show the output in DevDev.")
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(command.name), \(command.statusText)")
     }

@@ -46,7 +46,7 @@ final class StatusItemController {
         let item = self.item ?? makeItem()
         self.item = item
         item.button?.image = MenubarIcon.image(badge: model.panel.showsCrashBadge)
-        item.button?.toolTip = model.panel.showsCrashBadge ? "devdev: a Command crashed" : "devdev"
+        item.button?.toolTip = model.panel.showsCrashBadge ? "DevDev: a Command crashed" : "DevDev"
     }
 
     private func makeItem() -> NSStatusItem {
@@ -96,7 +96,7 @@ enum MenubarIcon {
         }
         // A template lets the menu bar tint the icon. The badged one keeps its red.
         image.isTemplate = !badge
-        image.accessibilityDescription = badge ? "devdev, a Command crashed" : "devdev"
+        image.accessibilityDescription = badge ? "DevDev, a Command crashed" : "DevDev"
         return image
     }
 

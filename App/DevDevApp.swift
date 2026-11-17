@@ -10,7 +10,7 @@ struct DevDevApp: App {
 
     var body: some Scene {
         // One window. Closing it quits the App; the Helper and its Processes carry on.
-        Window("devdev", id: "main") {
+        Window("DevDev", id: "main") {
             MainWindow(model: model)
                 .frame(minWidth: 900, minHeight: 520)
                 // A Command's name in the menubar panel, or a notification: show its output.
@@ -25,7 +25,7 @@ struct DevDevApp: App {
         .handlesExternalEvents(matching: [BuildFlavor.current().urlScheme])
         .commands {
             CommandGroup(replacing: .appTermination) {
-                Button("Quit devdev") {
+                Button("Quit DevDev") {
                     NSApp.terminate(nil)
                 }
                 .keyboardShortcut("q")

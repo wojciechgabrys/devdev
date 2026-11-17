@@ -109,7 +109,7 @@ Steps for each item are in `docs/manual-checklist.md`. Every item is **not verif
 - [ ] **Not verified.** Expanding a Project shows its Commands with status and Start, Restart, Stop.
 - [ ] **Not verified.** The panel shows no output.
 - [ ] **Not verified.** Clicking a Command's name opens the App on that Command's output.
-- [ ] **Not verified.** Open devdev launches or focuses the App.
+- [ ] **Not verified.** Open DevDev launches or focuses the App.
 - [ ] **Not verified.** A crash puts a badge on the icon, and Stop All clears it.
 - [ ] **Not verified.** Stop All and Quit in the panel ends everything.
 - [ ] **Not verified.** Show menubar icon off keeps the Helper running without an icon.

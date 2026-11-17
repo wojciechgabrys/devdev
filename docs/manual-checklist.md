@@ -109,9 +109,9 @@ Run every check here with the App closed, unless a step says to open it. Install
   1. With the App closed, open the panel and click `Vite`'s name.
   2. The App opens with `Vite` selected and its output showing.
   3. In the App select the other Command. Open the panel and click `Vite` again. The App comes forward and `Vite` is selected again.
-- [ ] **Open devdev launches or focuses the App.**
-  1. With the App closed, click Open devdev at the bottom of the panel. The App opens.
-  2. Click on another app's window, then click Open devdev again. The same devdev window comes forward and no second one opens.
+- [ ] **Open DevDev launches or focuses the App.**
+  1. With the App closed, click Open DevDev at the bottom of the panel. The App opens.
+  2. Click on another app's window, then click Open DevDev again. The same DevDev window comes forward and no second one opens.
 - [ ] **A crash puts a badge on the icon, and Stop All clears it.**
   1. Click Start on `Fails`. After about 2 seconds it reads Crashed (exit code 3) and the icon shows a red dot.
   2. Check the icon in both the light and the dark menu bar (System Settings > Appearance). The icon itself stays readable.

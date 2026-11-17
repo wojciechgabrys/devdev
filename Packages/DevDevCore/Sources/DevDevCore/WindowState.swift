@@ -121,7 +121,7 @@ public struct WindowState: Sendable, Equatable {
             case .outdated:
                 return HelperNotice(
                     message:
-                        "The running Helper is outdated: it comes from another build of devdev. "
+                        "The running Helper is outdated: it comes from another build of DevDev. "
                         + "It keeps working. Restart it to use this build.",
                     actionLabel: restartLabel, action: .restartHelper)
             case .incompatible(let helperProtocol, let appProtocol):
@@ -355,7 +355,7 @@ extension ProjectSnapshot {
             ? "" : "\(running) Running Command\(running == 1 ? "" : "s") will be stopped first. "
         return Confirmation(
             title: "Remove the Project “\(name)”?",
-            message: "\(stopping)Its Commands are removed from devdev. The folder on disk is not touched.",
+            message: "\(stopping)Its Commands are removed from DevDev. The folder on disk is not touched.",
             confirmLabel: running == 0 ? "Remove" : "Stop and Remove")
     }
 }

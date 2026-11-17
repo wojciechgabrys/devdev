@@ -28,7 +28,7 @@ let tools = MCPTools(helper: helper, workingDirectory: FileManager.default.curre
 
 let server = Server(
     name: "devdev", version: DevDevCore.version,
-    instructions: "Control and read the dev processes devdev runs for your Projects.",
+    instructions: "Control and read the dev processes DevDev runs for your Projects.",
     capabilities: .init(tools: .init(listChanged: false)))
 
 await server.withMethodHandler(ListTools.self) { _ in
@@ -88,7 +88,7 @@ actor LazyHelper: HelperConnection {
             throw HelperError(
                 code: HelperError.connectionFailed,
                 message:
-                    "The running devdev Helper speaks protocol version \(client.helperProtocolVersion), this devdev CLI speaks \(HelperProtocol.version). Ask the user to restart the Helper from the devdev App.")
+                    "The running DevDev Helper speaks protocol version \(client.helperProtocolVersion), this DevDev CLI speaks \(HelperProtocol.version). Ask the user to restart the Helper from the DevDev App.")
         }
         self.client = client
         return client
@@ -117,7 +117,7 @@ actor LazyHelper: HelperConnection {
         }
         throw HelperError(
             code: HelperError.connectionFailed,
-            message: "The devdev Helper was started but did not answer on \(socketPath).")
+            message: "The DevDev Helper was started but did not answer on \(socketPath).")
     }
 }
 

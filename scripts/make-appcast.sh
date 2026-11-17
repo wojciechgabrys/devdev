@@ -63,9 +63,10 @@ find_sign_update() {
         printf '%s\n' "$DERIVED_DATA/$tool_in_artifacts"
         return
     fi
-    # Xcode names its folder devdev-<hash> and records the project it belongs to in info.plist.
+    # Every DerivedData folder records the project it belongs to in info.plist. The folder's name is
+    # not checked: Xcode names it devdev-<hash>, but xcodebuild -derivedDataPath can name it anything.
     project="$(cd "$(dirname "$0")/.." && pwd -P)/devdev.xcodeproj"
-    for folder in "$HOME"/Library/Developer/Xcode/DerivedData/devdev-*; do
+    for folder in "$HOME"/Library/Developer/Xcode/DerivedData/*; do
         [ -x "$folder/$tool_in_artifacts" ] || continue
         workspace=$(/usr/libexec/PlistBuddy -c "Print :WorkspacePath" "$folder/info.plist" 2>/dev/null || true)
         if [ "$workspace" = "$project" ]; then

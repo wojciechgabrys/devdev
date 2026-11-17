@@ -187,7 +187,7 @@ final class HelperStandIn: @unchecked Sendable {
 
             #expect(model.state.selectedProject?.id == shop)
             try await waitUntil("both Projects show") { model.state.projects.count == 2 }
-            #expect(model.state.projects.map(\.name) == ["shop", "blog"])
+            #expect(model.state.projects.map(\.name) == ["blog", "shop"])
         }
     }
 
@@ -452,7 +452,7 @@ final class HelperStandIn: @unchecked Sendable {
             #expect(model.discoveryChecklist == nil)
             try await waitUntil("three Commands show") { model.state.selectedProject?.commands.count == 3 }
             let commands = try #require(model.state.selectedProject?.commands)
-            #expect(commands.map(\.settings.name) == ["server", "queue", "vite"])
+            #expect(commands.map(\.settings.name) == ["queue", "server", "vite"])
             #expect(commands.map(\.madeByDiscovery) == [true, true, true])
         }
     }
@@ -553,18 +553,18 @@ final class HelperStandIn: @unchecked Sendable {
             #expect(checklist.reason == .rescan)
             #expect(checklist.plan.add.map(\.settings.name) == ["stripe", "horizon", "scheduler", "watch:docs"])
             // `npm run dev` is still proposed, from package.json, so vite stays.
-            #expect(checklist.plan.remove.map(\.name) == ["server", "logs"])
+            #expect(checklist.plan.remove.map(\.name) == ["logs", "server"])
             #expect(checklist.removeChecked == [false, false])
 
             checklist.addChecked = [false, true, false, false]
-            checklist.removeChecked = [true, false]
+            checklist.removeChecked = [false, true]
             await model.applyDiscovery(checklist)
 
             try await waitUntil("the Commands change") {
-                model.state.selectedProject?.commands.map(\.settings.name) == ["queue", "logs", "vite", "horizon"]
+                model.state.selectedProject?.commands.map(\.settings.name) == ["horizon", "logs", "queue", "vite"]
             }
             let after = try #require(model.state.selectedProject?.commands)
-            #expect(after.map(\.madeByDiscovery) == [false, true, true, true])
+            #expect(after.map(\.madeByDiscovery) == [true, true, false, true])
         }
     }
 }

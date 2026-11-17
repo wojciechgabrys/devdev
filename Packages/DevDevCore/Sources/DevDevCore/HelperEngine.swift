@@ -80,7 +80,8 @@ public actor HelperEngine {
         self.folderWatcher = folderWatcher
         self.loginItem = loginItem
         self.poster = poster
-        self.configuration = configuration
+        // A file saved before the lists were sorted is served sorted. It is rewritten at the next change.
+        self.configuration = configuration.sortedByName()
         self.store = store
         self.shell = shell
         self.timings = timings
@@ -185,7 +186,7 @@ public actor HelperEngine {
 
     // MARK: - A whole Project
 
-    /// Starts every Command included in Start All that is not Running, in Command order.
+    /// Starts every Command included in Start All that is not Running, in order of name.
     @discardableResult
     public func startAll(_ projectID: UUID, origin: Origin) throws -> ProjectSnapshot {
         let project = try findProject(projectID)
@@ -209,7 +210,8 @@ public actor HelperEngine {
         return projectSnapshot(try findProject(projectID))
     }
 
-    /// Restarts only the Running Commands. Never starts a Stopped, Finished or Crashed Command.
+    /// Restarts only the Running Commands, in order of name. Never starts a Stopped, Finished or
+    /// Crashed Command.
     @discardableResult
     public func restartAll(_ projectID: UUID, origin: Origin) async throws -> ProjectSnapshot {
         let project = try findProject(projectID)
@@ -278,7 +280,8 @@ public actor HelperEngine {
         var changed = configuration
         changed.projects[index].name = trimmed
         try commit(changed)
-        return projectSnapshot(changed.projects[index])
+        // The rename may have moved the Project, so its old index can hold another one.
+        return projectSnapshot(try findProject(projectID))
     }
 
     /// Stops the Project's Processes, then removes it.
@@ -725,7 +728,10 @@ public actor HelperEngine {
                     projectAction: action)))
     }
 
+    /// Saves the change and tells every client. Projects and Commands are put in order of name
+    /// first, so what is saved and what is served never differ in order.
     private func commit(_ changed: Configuration) throws {
+        let changed = changed.sortedByName()
         do {
             try store.save(changed)
         } catch {

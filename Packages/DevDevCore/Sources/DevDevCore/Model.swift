@@ -130,7 +130,7 @@ public struct Project: Codable, Sendable, Equatable, Identifiable {
     public var name: String
     /// Absolute path of the Project folder.
     public var folder: String
-    /// In the user's order. Start All follows it.
+    /// The Helper keeps them in order of name (`NameOrder`). Start All follows that order.
     public var commands: [Command]
 
     public init(id: UUID = UUID(), name: String, folder: String, commands: [Command] = []) {
@@ -138,6 +138,29 @@ public struct Project: Codable, Sendable, Equatable, Identifiable {
         self.name = name
         self.folder = folder
         self.commands = commands
+    }
+}
+
+/// The one rule that orders Projects and Commands by name, the way Finder orders file names:
+/// case is ignored and numbers compare by value. Nothing else compares names for ordering.
+public enum NameOrder {
+    public static func compare(_ first: String, _ second: String) -> ComparisonResult {
+        first.localizedStandardCompare(second)
+    }
+
+    public static func areInIncreasingOrder(_ first: String, _ second: String) -> Bool {
+        compare(first, second) == .orderedAscending
+    }
+
+    /// The items in order of name. Items with equal names keep their relative order.
+    static func sorted<Item>(_ items: [Item], by name: (Item) -> String) -> [Item] {
+        items.enumerated().sorted { first, second in
+            switch compare(name(first.element), name(second.element)) {
+            case .orderedAscending: true
+            case .orderedDescending: false
+            case .orderedSame: first.offset < second.offset
+            }
+        }.map(\.element)
     }
 }
 
@@ -163,6 +186,17 @@ public struct Configuration: Codable, Sendable, Equatable {
         version = try container.decode(Int.self, forKey: .version)
         projects = try container.decode([Project].self, forKey: .projects)
         settings = try container.decodeIfPresent(HelperSettings.self, forKey: .settings) ?? HelperSettings()
+    }
+
+    /// The same configuration with its Projects, and every Project's Commands, in order of name.
+    public func sortedByName() -> Configuration {
+        var sorted = self
+        sorted.projects = NameOrder.sorted(projects, by: \.name).map { project in
+            var project = project
+            project.commands = NameOrder.sorted(project.commands, by: \.settings.name)
+            return project
+        }
+        return sorted
     }
 }
 

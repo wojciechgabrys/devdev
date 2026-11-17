@@ -65,7 +65,7 @@ final class RecordingPoster: NotificationPoster, @unchecked Sendable {
             try await settle()
             #expect(poster.notifications.count == 1)
             #expect(poster.notifications.first?.kind == .started)
-            #expect(poster.notifications.first?.body == "Start All by an agent: Queue, Vite and Server started")
+            #expect(poster.notifications.first?.body == "Start All by an agent: Queue, Server and Vite started")
             #expect(poster.notifications.first?.commandID == h.commandIDs[0])
         }
     }

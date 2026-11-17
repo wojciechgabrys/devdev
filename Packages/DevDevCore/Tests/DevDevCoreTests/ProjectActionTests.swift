@@ -9,7 +9,7 @@ import Testing
         CommandSettings(name: name, commandLine: line, includedInStartAll: included)
     }
 
-    @Test func startAllStartsEveryIncludedCommandThatIsNotRunningInCommandOrder() async throws {
+    @Test func startAllStartsEveryIncludedCommandThatIsNotRunningInOrderOfName() async throws {
         try await withHarness([
             settings("A", Script.runsForever),
             settings("B", Script.runsForever, included: false),
@@ -106,10 +106,13 @@ import Testing
 
             let project = try await h.engine.restartAll(h.projectID, origin: .user)
 
-            #expect(project.commands.map(\.status) == [.running, .stopped, .finished, .crashed, .running])
-            #expect(project.commands[0].processID != first.processID)
-            #expect(project.commands[4].processID != last.processID)
-            #expect(project.commands[1].processID == nil)
+            // The answer lists the Commands in order of name.
+            #expect(
+                project.commands.map(\.settings.name) == ["Crashed", "Finished", "Runs", "Runs too", "Stopped"])
+            #expect(project.commands.map(\.status) == [.crashed, .finished, .running, .running, .stopped])
+            #expect(project.commands[2].processID != first.processID)
+            #expect(project.commands[3].processID != last.processID)
+            #expect(project.commands[4].processID == nil)
             #expect(!processIsAlive(try #require(first.processID)))
             #expect(!processIsAlive(try #require(last.processID)))
             // The untouched Commands were not run again: no new output, no banner.

@@ -148,9 +148,9 @@ import Testing
             #expect(
                 result.text == """
                     Shop: Running
-                    - Vite: Running
                     - Queue Worker: Running
                     - Scheduler: Stopped
+                    - Vite: Running
                     """)
         }
     }
@@ -163,9 +163,9 @@ import Testing
             #expect(
                 result.text == """
                     Shop: Stopped
-                    - Vite: Stopped
                     - Queue Worker: Stopped
                     - Scheduler: Stopped
+                    - Vite: Stopped
                     """)
         }
     }
@@ -178,9 +178,9 @@ import Testing
             #expect(
                 result.text == """
                     Shop: Partly Running
-                    - Vite: Running
                     - Queue Worker: Stopped
                     - Scheduler: Stopped
+                    - Vite: Running
                     """)
         }
     }
@@ -266,7 +266,7 @@ import Testing
         try await withTools(shop) { _, tools in
             let result = await tools.call("stop_command", arguments: ["command": .string("queue")])
             #expect(result.isError)
-            #expect(result.text == "No Command named 'queue' in Project 'Shop'. Commands: Vite, Queue Worker, Scheduler.")
+            #expect(result.text == "No Command named 'queue' in Project 'Shop'. Commands: Queue Worker, Scheduler, Vite.")
         }
     }
 
@@ -282,7 +282,7 @@ import Testing
         try await withTools(shop) { _, tools in
             let result = await tools.call("start_command", arguments: [:])
             #expect(result.isError)
-            #expect(result.text == "Name a Command with the 'command' argument. Commands in Shop: Vite, Queue Worker, Scheduler.")
+            #expect(result.text == "Name a Command with the 'command' argument. Commands in Shop: Queue Worker, Scheduler, Vite.")
         }
     }
 

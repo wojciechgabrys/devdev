@@ -72,15 +72,6 @@ import Testing
         #expect(settings.subfolder.isEmpty)
     }
 
-    @Test func commandsKeepTheOrderTheyWereAddedIn() async throws {
-        let commands = ["A", "B", "C"].map { CommandSettings(name: $0, commandLine: "true") }
-        try await withHarness(commands) { h in
-            let project = try await h.project()
-            #expect(project.commands.map(\.settings.name) == ["A", "B", "C"])
-            #expect(try saved(h).projects[0].commands.map(\.settings.name) == ["A", "B", "C"])
-        }
-    }
-
     @Test func aCommandNameMustBeUniqueWithinItsProject() async throws {
         try await withHarness([CommandSettings(name: "Queue", commandLine: "true")]) { h in
             let error = await #expect(throws: HelperError.self) {

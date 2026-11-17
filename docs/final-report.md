@@ -144,3 +144,16 @@ Steps for each item are in `docs/manual-checklist.md`. Every item is **not verif
 
 - [ ] **Not verified.** Claude Code, set up with the line from Settings, can list a Project, restart its queue Command and read the output.
 - [ ] **Not verified.** `devdev mcp` starts the Helper when it is not running.
+
+### Reorder tabs by dragging
+
+- [ ] **Not verified.** A dragged tab follows the pointer and its neighbours slide aside live.
+- [ ] **Not verified.** The selection and the output stay the same during a drag and after the drop.
+- [ ] **Not verified.** A press below the threshold is a plain click.
+- [ ] **Not verified.** The x button closes and never starts a drag.
+- [ ] **Not verified.** Middle and right buttons never start a drag.
+- [ ] **Not verified.** A release outside the window drops the tab.
+- [ ] **Not verified.** A tab drag never moves the window.
+- [ ] **Not verified.** With Reduce Motion on, the neighbours jump.
+- [ ] **Not verified.** One tab alone cannot move.
+- [ ] **Not verified.** Tabs still work as before.

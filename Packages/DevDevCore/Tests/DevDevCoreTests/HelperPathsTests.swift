@@ -34,4 +34,9 @@ import Testing
         #expect(BuildFlavor.current(bundleIdentifier: "dev.devdev.helper.debug") == .debug)
         #expect(BuildFlavor.current(bundleIdentifier: nil) == BuildFlavor.compiled)
     }
+
+    @Test func onlyAReleaseBuildHasAnUpdater() {
+        #expect(BuildFlavor.release.hasUpdater)
+        #expect(!BuildFlavor.debug.hasUpdater)
+    }
 }

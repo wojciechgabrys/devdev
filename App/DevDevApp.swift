@@ -7,6 +7,8 @@ import SwiftUI
 struct DevDevApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = HelperLauncher.makeModel()
+    /// Started here, at launch, in a Release build. A Debug build has none.
+    private let updater = AppUpdater.forThisBuild
 
     var body: some Scene {
         // One window. Closing it quits the App; the Helper and its Processes carry on.
@@ -25,6 +27,7 @@ struct DevDevApp: App {
         .handlesExternalEvents(matching: [BuildFlavor.current().urlScheme])
         .commands {
             AboutCommands()
+            UpdateCommands(updater: updater)
             CommandGroup(replacing: .appTermination) {
                 Button("Quit DevDev") {
                     NSApp.terminate(nil)

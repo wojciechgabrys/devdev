@@ -32,9 +32,11 @@ jobs:
           tag_version="${GITHUB_REF_NAME#v}"
           core_version=$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Packages/DevDevCore/Sources/DevDevCore/DevDevCore.swift)
           marketing_versions=$(grep -o 'MARKETING_VERSION = [^;]*' devdev.xcodeproj/project.pbxproj | sed 's/MARKETING_VERSION = //' | sort -u)
-          echo "Tag: $tag_version  DevDevCore.version: $core_version  MARKETING_VERSION: $marketing_versions"
-          if [ "$core_version" != "$tag_version" ] || [ "$marketing_versions" != "$tag_version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match DevDevCore.version ($core_version) and MARKETING_VERSION ($marketing_versions)."
+          # The build number equals the version, so Sparkle can compare versions.
+          build_versions=$(grep -o 'CURRENT_PROJECT_VERSION = [^;]*' devdev.xcodeproj/project.pbxproj | sed 's/CURRENT_PROJECT_VERSION = //' | sort -u)
+          echo "Tag: $tag_version  DevDevCore.version: $core_version  MARKETING_VERSION: $marketing_versions  CURRENT_PROJECT_VERSION: $build_versions"
+          if [ "$core_version" != "$tag_version" ] || [ "$marketing_versions" != "$tag_version" ] || [ "$build_versions" != "$tag_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match DevDevCore.version ($core_version), MARKETING_VERSION ($marketing_versions) and CURRENT_PROJECT_VERSION ($build_versions)."
             exit 1
           fi
           echo "VERSION=$tag_version" >> "$GITHUB_ENV"

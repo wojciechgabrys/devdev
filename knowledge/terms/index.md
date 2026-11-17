@@ -10,6 +10,7 @@ title: "Terms"
 - [Build flavor](DVDV-1-build-flavor.md): Debug or Release, which decides a build's bundle identifiers, data folder, socket and URL scheme.
 - [Crashed](DVDV-1-crashed.md): A Command whose Process ended by itself with a non-zero exit code or a signal.
 - [Discovery-made Command](DVDV-1-discovery-made-command.md): A Command added from a Discovery proposal and not edited by hand since.
+- [Name order](DVDV-5-name-order.md): The one order of Projects and Commands: by name, compared the way Finder compares file names.
 - [Origin](DVDV-1-origin.md): Who or what caused a change to a Process: user, agent, autoRestart or fileChange.
 - [Outdated Helper](DVDV-1-outdated-helper.md): A running Helper from another build that speaks the same protocol version as the App.
 - [Place](DVDV-4-place.md): A tab's position in the tab strip, counted from the left.

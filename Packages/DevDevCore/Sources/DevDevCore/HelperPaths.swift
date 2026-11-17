@@ -27,6 +27,15 @@ public enum BuildFlavor: String, Sendable, CaseIterable {
         }
     }
 
+    /// Only a Release build updates itself. A Debug build starts no updater, makes no update
+    /// check and shows no update controls.
+    public var hasUpdater: Bool {
+        switch self {
+        case .release: true
+        case .debug: false
+        }
+    }
+
     /// The flavor this code was compiled as.
     public static var compiled: BuildFlavor {
         #if DEBUG

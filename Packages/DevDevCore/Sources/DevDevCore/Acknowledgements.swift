@@ -35,6 +35,7 @@ public enum Acknowledgements {
     public static let packages: [Acknowledgement] = [
         package("eventsource", "EventSource", "https://github.com/mattt/eventsource", "MIT"),
         package("h", "h", "https://github.com/rarestype/h", "Apache-2.0", notice: true),
+        package("sparkle", "Sparkle", "https://github.com/sparkle-project/Sparkle", "MIT"),
         package("swift-sdk", "MCP Swift SDK", "https://github.com/modelcontextprotocol/swift-sdk", "MIT and Apache-2.0"),
         package("swift-argument-parser", "Swift Argument Parser", "https://github.com/apple/swift-argument-parser", "Apache-2.0"),
         package("swift-atomics", "Swift Atomics", "https://github.com/apple/swift-atomics", "Apache-2.0"),

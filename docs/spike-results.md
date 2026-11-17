@@ -6,6 +6,8 @@ Machine: macOS 26.7.1 (25G241), Xcode Swift 6.4.2, PHP 8.5.12 (Herd), node 24.19
 
 The throwaway code is not in the repo. Only this file and the fixtures in `Packages/DevDevCore/Tests/DevDevCoreTests/Fixtures/dev-list/` were kept.
 
+A later spike, for the Sparkle updater, was run on 2026-11-17. It is the last section of this file: [Sparkle updater with an ad hoc signed update](#sparkle-updater-with-an-ad-hoc-signed-update).
+
 | # | Item | Result | Fallback taken |
 |---|---|---|---|
 | 1 | `php artisan dev:list` | Works. Has `--json`. | None |
@@ -242,3 +244,174 @@ Two records could not be removed by the spike. Both are inert.
 
 - launchd's per-user enable list still holds the line `"dev.devdev.spike.helper" => enabled`. `launchctl` has no command to delete such a line.
 - macOS may keep a notification-permission record for `dev.devdev.spike.helper` in state `denied`. It did not show in `defaults read com.apple.ncprefs`.
+
+## Sparkle updater with an ad hoc signed update
+
+Checked in throwaway code on 2026-11-17, before any other slice of the updater feature. Same Mac: macOS 26.7.1 (25G241), Xcode 27.2. Sparkle **2.10.1**, the newest release, fetched as a Swift package.
+
+**Result: all three questions pass. The feature is not stopped.**
+
+| # | Question | Result |
+|---|---|---|
+| 1 | Does Sparkle accept and install an ad hoc signed update, verified by EdDSA alone, from a DMG? | **Yes.** Installed twice. A wrong signature was refused. |
+| 2 | Does the updated app open afterwards without a Gatekeeper block? | **Yes.** Sparkle relaunched it, and `open` started it again. No quarantine mark. |
+| 3 | Does the install succeed while a Helper runs from inside the replaced app, and does that Helper keep running? | **Yes.** Same Helper process before and after two installs. No signal reached it. |
+
+The spike drove Sparkle's real updater (`SPUUpdater`) with a scripted user driver that answered "install" by itself. Sparkle's standard window was never on screen. Everything about that window is listed under "Not verified" below.
+
+### The set-up
+
+- A temporary folder under `/tmp`. Nothing in `/Applications`, nothing in the Keychain, no real key, no real feed.
+- Test app `SpikeApp.app` (`dev.devdev.sparklespike`, `LSUIElement`), built with `swift build`, bundled by hand. It held `Contents/Frameworks/Sparkle.framework` and a helper bundle at `Contents/Helpers/SpikeHelper.app`, the same place DevDev keeps its Helper.
+- Every piece signed ad hoc with `codesign --force --sign -`, inside out: Sparkle's `Installer.xpc`, `Downloader.xpc`, `Autoupdate`, `Updater.app`, the framework, the helper, the app. `codesign -dvv` read `Signature=adhoc`, `flags=0x2(adhoc)`, `TeamIdentifier=not set`. This Mac has no signing identity at all (`security find-identity`: `0 valid identities found`).
+- No hardened runtime and no sandbox, as in DevDev.
+- A throwaway Ed25519 key made in a Swift script with CryptoKit and written to a file. `generate_keys` was never run, because it writes to the Keychain.
+- The update was a DMG made the way `scripts/make-dmg.sh` makes one: `hdiutil create -fs HFS+ -format UDZO`, holding the app and an `Applications` link.
+- A local appcast and the DMG were served by `python3 -m http.server` on `127.0.0.1`. The test app's Info.plist allowed local HTTP with `NSAllowsLocalNetworking`. DevDev needs no such key, since its feed is HTTPS.
+- The app started its helper with `NSWorkspace.openApplication`, as `App/HelperLauncher.swift` does. The helper wrote one line a second to a log and logged any `SIGTERM`.
+
+### 1. Install of an ad hoc signed update, verified by EdDSA alone
+
+**Result: installed. Sparkle did not ask for an Apple code signature.**
+
+Two installs ran, 1.0.0 to 1.0.1 and 1.0.1 to 1.0.2. Each build had a different code hash, as every ad hoc build does. The app's own log of the first one:
+
+> v=1.0.0 driver: update found version=1.0.1 stage=0 userInitiated=false descFormat=markdown
+>
+> v=1.0.0 driver: download initiated
+>
+> v=1.0.0 delegate: extracted
+>
+> v=1.0.0 driver: ready to install and relaunch; replying install
+>
+> v=1.0.0 delegate: will install 1.0.1
+>
+> v=1.0.0 delegate: will relaunch
+>
+> v=1.0.1 launched path=/private/tmp/sparkle-spike.IJUBAm/install/SpikeApp.app
+
+- After the install, `Info.plist` in the installed app and in its helper bundle read the new version.
+- The installed app's `CDHash` changed from `1c26f47b…` (the 1.0.0 build) to `54c8a366…` (the 1.0.1 build in the DMG). `codesign --verify --deep --strict` passed on it.
+- The web server's log shows one `GET /appcast.xml` and one `GET /spike-1.0.1.dmg`.
+- A check made by the updated app answered `You’re up to date!` (`SUSparkleErrorDomain` code 1001). So an equal version is offered nothing.
+
+**Control: EdDSA is what decides.** The appcast for 1.0.2 was first given a valid signature of a different file. Sparkle downloaded and extracted the DMG, then refused it:
+
+> driver: UPDATER ERROR Error Domain=SUSparkleErrorDomain Code=4005 "The update is improperly signed and could not be validated. Please try again later or contact the app developer."
+
+The installed app stayed at 1.0.1. With the right signature in the appcast, the same DMG installed.
+
+### 2. Gatekeeper on the next launch
+
+**Result: no block. The updated app opened twice.**
+
+- Sparkle relaunched the app after each install. The new process logged `launched` with the new version within one second.
+- After the second install the app was quit and started again with `open`. `open` exited 0 and the app logged `launched` as 1.0.2.
+- `xattr -lr` on the installed app found **no** `com.apple.quarantine` on any file, after both installs. Only `com.apple.provenance`, which the 1.0.0 build also had before any update.
+- `spctl -a -vv` on the app says `rejected`. That is the answer for every ad hoc signed app and is not a launch block. Gatekeeper checks at launch only when a file carries the quarantine mark.
+
+A dialog cannot be seen from a script. The evidence is that the process ran and wrote its log. See "Not verified".
+
+### 3. A Helper running from inside the replaced app
+
+**Result: the install succeeded and the Helper kept running, untouched.**
+
+- The helper started at 13:42:21 UTC as pid 31290 from `…/SpikeApp.app/Contents/Helpers/SpikeHelper.app`, version 1.0.0.
+- Install one finished at 13:42:22. Install two finished about two minutes later, with the helper already running for that long.
+- After both installs `ps` still showed pid 31290 with the start time 14:42:21 local. Its log had 123 `alive` lines, one a second, with no gap and no `SIGTERM` or `willTerminate` line.
+- The helper bundle on disk was replaced: its `Info.plist` read 1.0.2 while the running process was still the 1.0.0 build. That is the state DevDev's Outdated Helper banner exists for.
+- The relaunched app found the helper by bundle identifier and did not start a second one.
+
+Sparkle swaps the whole bundle and signals only the app it updates. This matches what `scripts/install.sh` does today.
+
+### Release notes format
+
+Source: [Publishing an update](https://sparkle-project.org/documentation/publishing/) and Sparkle's `CHANGELOG`.
+
+| Format | How the appcast marks it | Since |
+|---|---|---|
+| HTML | `<description>` with no format attribute. Inside `<![CDATA[ … ]]>` the HTML needs no escaping. | Always |
+| Plain text | `<description sparkle:format="plain-text">` | Sparkle 2.4 |
+| Markdown | `<description sparkle:format="markdown">` | Sparkle 2.9, macOS 12 or later |
+
+- Notes can also live in a separate file named by `<sparkle:releaseNotesLink>`. DevDev embeds them, so this is not used.
+- The docs call the Markdown support "basic". They do not list which Markdown is rendered.
+- GitHub's generated notes are Markdown. DevDev needs macOS 26 and Sparkle 2.10.1, so `sparkle:format="markdown"` is allowed.
+- In the spike the appcast item carried `<description sparkle:format="markdown"><![CDATA[…]]></description>`. Sparkle parsed it: the item reported `itemDescriptionFormat` `markdown` and the text unchanged. How the standard window draws it was not seen.
+- Text inside CDATA can still break the XML with the sequence `]]>`. The appcast script must split or escape it.
+- `SUShowReleaseNotes` (Boolean, default `YES`) hides the notes when `NO`. DevDev leaves it alone.
+
+### Info.plist keys
+
+Source: [Customizing Sparkle](https://sparkle-project.org/documentation/customization/). The spike app shipped exactly these values and the updater read them back as shown.
+
+| Wanted behaviour | Key | Type | Value |
+|---|---|---|---|
+| Feed URL | `SUFeedURL` | String | The appcast URL |
+| Public key | `SUPublicEDKey` | String | Base64 of the 32-byte public key |
+| Checks on from first launch, no permission prompt | `SUEnableAutomaticChecks` | Boolean | `YES` |
+| Daily checks | `SUScheduledCheckInterval` | Number | `86400`. This is also the default. The lowest allowed is one hour. |
+| No silent download or install | `SUAutomaticallyUpdate` | Boolean | `NO`. This is also the default. |
+| No "install automatically" option | `SUAllowsAutomaticUpdates` | Boolean | `NO` |
+
+- **`SUEnableAutomaticChecks`.** Unset, Sparkle asks the user for permission on the second launch. Set to `YES`, it checks "without asking your users for permission first". In the spike the permission callback was never called, and `automaticallyChecksForUpdates` read `true` on the first launch.
+- **First launch.** With the keys above, the very first launch ran a scheduled check at once (`userInitiated=false`), before any user action.
+- **`SUAllowsAutomaticUpdates`.** The docs say `NO` will "disallow automatic updates and require manual installation every time". The `CHANGELOG` for 2.3.0 says "Hide automatic install check box when allowsAutomaticUpdates is disabled". In the spike `allowsAutomaticUpdates` and `automaticallyDownloadsUpdates` both read `false`. The missing checkbox itself was not seen.
+- Do not set `SUPromptUserOnFirstLaunch`. It only works when `SUEnableAutomaticChecks` is unset.
+- The Settings switch maps to `SPUUpdater.automaticallyChecksForUpdates`. Sparkle stores it in the app's own defaults as `SUEnableAutomaticChecks`. The spike app's defaults domain also held `SUHasLaunchedBefore`, `SULastCheckTime` and `SUUpdateGroupIdentifier`.
+
+### `generate_keys` and `sign_update`
+
+**Where.** The Swift package is a binary package. Its downloaded artifact holds the tools beside the framework:
+
+- With `swift package resolve`, seen in the spike: `.build/artifacts/sparkle/Sparkle/bin/`, holding `generate_keys`, `sign_update`, `generate_appcast`, `BinaryDelta` and `old_dsa_scripts`.
+- With Xcode, from Sparkle's [documentation](https://sparkle-project.org/documentation/): `../artifacts/sparkle/Sparkle/bin/`, relative to the package `checkouts` folder. For `xcodebuild` that is `<DerivedData>/SourcePackages/artifacts/sparkle/Sparkle/bin/`. This Xcode path was read, not run.
+- The tools are not in the built app. A script must find them in the artifact folder after packages are resolved.
+
+**`sign_update` with a key that is not in a Keychain.** All run in the spike with the throwaway key:
+
+| Call | Outcome |
+|---|---|
+| `sign_update --ed-key-file <file> <dmg>` (short form `-f`) | Prints `sparkle:edSignature="…" length="1055833"` |
+| `cat <file> \| sign_update --ed-key-file - <dmg>` | The same line. `-` reads the key from standard input. |
+| `sign_update -p --ed-key-file <file> <dmg>` | Prints only the signature |
+| `sign_update --verify --ed-key-file <file> <dmg> <signature>` | Exit 0, prints nothing |
+| The same with a wrong signature | Exit 1, `Error: failed to pass signing verification.` |
+
+- **Key file format:** one line, the base64 of the 32-byte Ed25519 seed. 44 characters. The spike's file was CryptoKit's `Curve25519.Signing.PrivateKey().rawRepresentation`, base64 encoded, and `sign_update` took it. The public key is the base64 of the 32-byte public key, and Sparkle verified against it.
+- Without `--ed-key-file`, `sign_update` reads the Keychain, item account `ed25519` unless `--account` names another.
+- `-s <key>` passes the key as an argument. It is deprecated and prints a warning. Do not use it: an argument shows in process lists.
+- `--verify` was run with the private key file. Sparkle's source for the tool shows no option that takes a public key. So the workflow's check against `SUPublicEDKey` in the built app likely needs another way, such as deriving the public key from the secret and comparing, or verifying with CryptoKit.
+
+**`generate_keys`.** Read from its help text and source, not run:
+
+- No arguments: prints the public key. It makes a key in the Keychain only when none exists. An existing key "will be used and not overridden".
+- `-p` prints only the existing public key. `-x <file>` exports the private key to a file and refuses when the file exists. `-f <file>` imports a key from a file. `--account` picks the Keychain account, default `ed25519`.
+- macOS may ask for permission to let the tool reach the Keychain item.
+
+### Notes for the next slices
+
+- Xcode signs Sparkle's nested helpers when it embeds the framework. The spike signed them by hand. A plain `codesign --deep` was not used.
+- Sparkle's docs warn that an ad hoc signed app may fail to load Sparkle when Library Validation is on. DevDev has no hardened runtime, so it is off. The spike app loaded Sparkle without trouble.
+- Sparkle's docs say it will not update an app that runs from a read-only volume or under App Translocation. An app started from the mounted DMG, or from Downloads without being moved, is such a case.
+- Sparkle leaves `~/Library/Caches/<bundle id>/org.sparkle-project.Sparkle/` behind. That is normal.
+
+### Not verified, for the manual checklist
+
+- Sparkle's standard window: that it shows the notes, and that clicking **Install** installs. The spike answered "install" in code.
+- How Markdown notes look in that window.
+- That the window has no "Automatically download and install updates in the future" checkbox.
+- That no Gatekeeper or other dialog appeared on screen. Only the running process was seen.
+- An update of an app in `/Applications`, first installed from a DMG that a browser downloaded and quarantined.
+- The real feed: HTTPS, GitHub's redirect from `releases/latest/download/appcast.xml`, and a real release asset.
+- The daily check after 24 hours. Only the check at first launch was seen.
+- Whether macOS asks again for permissions after an update.
+- An app built by Xcode with Sparkle embedded by the project.
+
+### Clean-up
+
+- The temporary folder in `/tmp` with the package, both app builds, the DMGs, the appcast, the logs and the throwaway key: removed.
+- The spike app, its helper and the local web server: stopped. No spike process is running.
+- `~/Library/Caches/dev.devdev.sparklespike` and the defaults domain `dev.devdev.sparklespike`: removed.
+- The Keychain was never written. It holds no Sparkle key.
+- `/Applications/devdev.app` and the daily Helper were not touched. The daily Helper ran the whole time.

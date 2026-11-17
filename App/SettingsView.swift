@@ -9,6 +9,14 @@ struct SettingsView: View {
     /// Which `devdev` binary the line names is decided in `DevDevCore` (`MCPSetup`).
     private let mcpLine = MCPSetup.line(flavor: BuildFlavor.current(), appBundle: Bundle.main.bundleURL)
 
+    private let updates = UpdatesSection(
+        flavor: BuildFlavor.current(),
+        short: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?",
+        build: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?")
+
+    /// `nil` in a build without an updater, which also has no switch to show.
+    private let updater = AppUpdater.forThisBuild
+
     var body: some View {
         Form {
             if let settings = model.settings {
@@ -61,6 +69,21 @@ struct SettingsView: View {
                 Text("Agents can start, stop, restart and read output. They cannot add, edit or delete anything.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            Section(UpdatesSection.title) {
+                Text(updates.versionLabel)
+                if let updater {
+                    ForEach(updates.switches) { item in
+                        switch item {
+                        case .automaticChecks:
+                            Toggle(
+                                item.label,
+                                isOn: Binding(
+                                    get: { updater.automaticallyChecksForUpdates },
+                                    set: { on in updater.setAutomaticallyChecksForUpdates(on) }))
+                        }
+                    }
+                }
             }
         }
         .formStyle(.grouped)

@@ -110,6 +110,6 @@ struct AboutWindow: View {
         let short = info["CFBundleShortVersionString"] as? String ?? "?"
         let build = info["CFBundleVersion"] as? String ?? "?"
         let flavor = BuildFlavor.current() == .release ? "" : " (Debug)"
-        return "Version \(short) (\(build))\(flavor)"
+        return DevDevCore.versionLabel(short: short, build: build) + flavor
     }
 }

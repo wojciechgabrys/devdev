@@ -7,7 +7,8 @@ title: "Terms"
 
 # Terms
 
-- [Build flavor](DVDV-1-build-flavor.md): Debug or Release, which decides a build's bundle identifiers, data folder, socket and URL scheme.
+- [Appcast](DVDV-3-appcast.md): The appcast.xml feed that Sparkle reads to learn the newest version, its DMG, its signature and its release notes.
+- [Build flavor](DVDV-1-build-flavor.md): Debug or Release, which decides a build's bundle identifiers, data folder, socket, URL scheme and whether it has an updater.
 - [Crashed](DVDV-1-crashed.md): A Command whose Process ended by itself with a non-zero exit code or a signal.
 - [Discovery-made Command](DVDV-1-discovery-made-command.md): A Command added from a Discovery proposal and not edited by hand since.
 - [Name order](DVDV-5-name-order.md): The one order of Projects and Commands: by name, compared the way Finder compares file names.
@@ -17,3 +18,4 @@ title: "Terms"
 - [Rescan](DVDV-1-rescan.md): Running Discovery again on an existing Project to offer missing Commands and stale Discovery-made ones.
 - [Tab drag](DVDV-4-tab-drag.md): One move of an output tab by the left mouse button, from the press past the click threshold to the drop or an early end.
 - [Tab strip viewport](DVDV-4-tab-strip-viewport.md): The part of the tab strip that is in view when more tabs are open than fit, given as scroll distance and visible width.
+- [Update key](DVDV-3-update-key.md): The EdDSA key pair that signs each update DMG and lets an installed App trust it.

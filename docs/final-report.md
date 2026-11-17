@@ -161,3 +161,16 @@ Steps for each item are in `docs/manual-checklist.md`. Every item is **not verif
 - [ ] **Not verified.** With Reduce Motion on, the neighbours jump.
 - [ ] **Not verified.** One tab alone cannot move.
 - [ ] **Not verified.** Tabs still work as before.
+
+### Updates
+
+Added with the Sparkle updater, after the build above.
+
+- [ ] **Not verified.** A real update: N is installed, N+1 is tagged, Check for Updates… installs it and the App relaunches as N+1.
+- [ ] **Not verified.** After the update, the Helper still runs with its Processes and the App shows the outdated-Helper banner.
+- [ ] **Not verified.** The update window shows Markdown notes properly and offers no automatic install.
+- [ ] **Not verified.** No Gatekeeper or other dialog appears when the updated App opens.
+- [ ] **Not verified.** The automatic daily check offers the update without the menu item.
+- [ ] **Not verified.** The Settings switch turns automatic checks off and on, and survives a relaunch.
+- [ ] **Not verified.** Whether macOS asks again for notification or other permissions after an update. Record what happened.
+- [ ] **Not verified.** A Debug build shows no update item and no switch.

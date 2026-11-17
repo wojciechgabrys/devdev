@@ -8,3 +8,4 @@ title: "Specs"
 # Specs
 
 - [Build devdev macOS app from spec](DVDV-1-build-devdev-macos-app-from-spec.md): devdev is a native macOS app that starts, stops and watches a web project's dev servers from a main window, a menubar panel and an MCP server for AI agents. A background Helper owns every Process, so they survive the App quitting. This feature builds all seven phases of `docs/spec.md` in one unattended run, with spikes first and a manual checklist handed over at the end.
+- [Reorder tabs by dragging, updating tab shortcuts](DVDV-4-reorder-tabs-by-dragging-updating-tab-sh.md): The user can drag an output tab left or right in the main window's tab strip to change the tab order, with the other tabs sliding aside live and the strip scrolling by itself at its edges. Cmd-1 to Cmd-9, Cmd-0 and Cmd-Shift-[ and ] keep counting from the left, so they follow the new order. A drag never changes the selection, and the order is not saved across launches.

@@ -8,6 +8,10 @@ title: "Slices"
 # Slices
 
 - [Close-out: manual checklist, final verification and final report](DVDV-1-9-close-out-manual-checklist-final-verification-and-final-re.md): Slice #9 of "Build devdev macOS app from spec".
+- [Drag a tab in the strip: start, follow, live reorder, drop](DVDV-4-3-drag-a-tab-in-the-strip-start-follow-live-reorder-drop.md): Slice #3 of "Reorder tabs by dragging, updating tab shortcuts".
+- [Drag geometry rule in DevDevCore](DVDV-4-2-drag-geometry-rule-in-devdevcore.md): Slice #2 of "Reorder tabs by dragging, updating tab shortcuts".
+- [End a drag early: Esc, vanished Command, lost focus](DVDV-4-4-end-a-drag-early-esc-vanished-command-lost-focus.md): Slice #4 of "Reorder tabs by dragging, updating tab shortcuts".
+- [Move a tab in WindowState and WindowModel](DVDV-4-1-move-a-tab-in-windowstate-and-windowmodel.md): Slice #1 of "Reorder tabs by dragging, updating tab shortcuts".
 - [Phase 1: core package, Helper target and socket protocol](DVDV-1-2-phase-1-core-package-helper-target-and-socket-protocol.md): Slice #2 of "Build devdev macOS app from spec".
 - [Phase 2: main window, SwiftTerm output and install script](DVDV-1-3-phase-2-main-window-swiftterm-output-and-install-script.md): Slice #3 of "Build devdev macOS app from spec".
 - [Phase 3: menubar panel, crash badge, icon and launch-at-login settings](DVDV-1-4-phase-3-menubar-panel-crash-badge-icon-and-launch-at-login.md): Slice #4 of "Build devdev macOS app from spec".
@@ -15,4 +19,5 @@ title: "Slices"
 - [Phase 5: auto-restart and restart when files change](DVDV-1-6-phase-5-auto-restart-and-restart-when-files-change.md): Slice #6 of "Build devdev macOS app from spec".
 - [Phase 6: Discovery, add-Project checklist and Rescan](DVDV-1-7-phase-6-discovery-add-project-checklist-and-rescan.md): Slice #7 of "Build devdev macOS app from spec".
 - [Phase 7: devdev CLI, MCP tools and the Settings setup line](DVDV-1-8-phase-7-devdev-cli-mcp-tools-and-the-settings-setup-line.md): Slice #8 of "Build devdev macOS app from spec".
+- [Scroll the strip by itself at the edges during a drag](DVDV-4-5-scroll-the-strip-by-itself-at-the-edges-during-a-drag.md): Slice #5 of "Reorder tabs by dragging, updating tab shortcuts".
 - [Spikes: verify the five section 11 items and save dev:list fixtures](DVDV-1-1-spikes-verify-the-five-section-11-items-and-save-devlist-f.md): Slice #1 of "Build devdev macOS app from spec".

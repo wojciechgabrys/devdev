@@ -12,4 +12,7 @@ title: "Terms"
 - [Discovery-made Command](DVDV-1-discovery-made-command.md): A Command added from a Discovery proposal and not edited by hand since.
 - [Origin](DVDV-1-origin.md): Who or what caused a change to a Process: user, agent, autoRestart or fileChange.
 - [Outdated Helper](DVDV-1-outdated-helper.md): A running Helper from another build that speaks the same protocol version as the App.
+- [Place](DVDV-4-place.md): A tab's position in the tab strip, counted from the left.
 - [Rescan](DVDV-1-rescan.md): Running Discovery again on an existing Project to offer missing Commands and stale Discovery-made ones.
+- [Tab drag](DVDV-4-tab-drag.md): One move of an output tab by the left mouse button, from the press past the click threshold to the drop or an early end.
+- [Tab strip viewport](DVDV-4-tab-strip-viewport.md): The part of the tab strip that is in view when more tabs are open than fit, given as scroll distance and visible width.

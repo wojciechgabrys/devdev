@@ -1,6 +1,6 @@
 /// The logic shared by the App, the Helper and the `devdev` CLI.
 public enum DevDevCore {
-    public static let version = "0.2.1"
+    public static let version = "0.3.0"
 
     /// The version line of the About window. The build number equals the version, so it is
     /// shown only when a build breaks that rule.

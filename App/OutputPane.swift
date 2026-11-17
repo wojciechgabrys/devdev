@@ -45,9 +45,25 @@ struct OutputPane: View {
     }
 }
 
-/// One tab per opened Command, from any Project.
+/// One tab per opened Command, from any Project. A tab can be dragged left and right to a new place.
 private struct TabStrip: View {
     let model: WindowModel
+    /// The drag in progress, if any. The tab order itself lives in the model and changes live.
+    @State private var drag: TabDrag?
+    /// The tab drawn above the others: the dragged one, also while it settles after the drop.
+    @State private var raisedTab: UUID?
+    /// Each tab's real width, as laid out.
+    @State private var widths: [UUID: Double] = [:]
+    /// The visible part of the strip: how far it is scrolled and how wide it is.
+    @State private var viewport = TabStripViewport(scrollX: 0, width: 0)
+    /// Scrolls the strip by itself while a dragged tab is held at a visible edge.
+    @State private var scrollPosition = ScrollPosition()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The short slide of the neighbours and of the dropped tab. With Reduce Motion they jump.
+    private var slide: Animation? {
+        reduceMotion ? nil : .easeOut(duration: 0.15)
+    }
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -58,10 +74,35 @@ private struct TabStrip: View {
                     {
                         OutputTab(
                             command: command, projectName: project.name,
-                            isActive: model.state.selectedCommandID == id, model: model)
+                            isActive: model.state.selectedCommandID == id,
+                            showsHover: drag == nil, model: model,
+                            onDrag: { pressX, pointerX in dragged(id, pressX: pressX, pointerX: pointerX) },
+                            onDrop: drop, onCancel: cancel
+                        )
+                        .onGeometryChange(for: Double.self) { Double($0.size.width) } action: { widths[id] = $0 }
+                        .offset(x: offset(of: id))
+                        .zIndex(raisedTab == id ? 1 : 0)
+                        // The dragged tab follows the pointer at once. Only its neighbours slide.
+                        .transaction { if drag?.tab == id { $0.animation = nil } }
                     }
                 }
             }
+            .animation(slide, value: model.state.tabs)
+        }
+        .scrollPosition($scrollPosition)
+        .onScrollGeometryChange(for: TabStripViewport.self) {
+            TabStripViewport(scrollX: Double($0.contentOffset.x), width: Double($0.containerSize.width))
+        } action: { _, viewport in
+            scrolled(to: viewport)
+        }
+        // Runs only while the dragged tab is held at an edge with tabs out of view on that side.
+        // Any end of the drag clears `drag`, which stops it.
+        .task(id: drag?.isScrolling ?? false) { await scrollAtEdge() }
+        // The dragged tab's Command was deleted or its Project removed: the drag ends quietly.
+        .onChange(of: model.state.tabs) { _, tabs in
+            guard let drag, !drag.continues(in: tabs) else { return }
+            self.drag = nil
+            raisedTab = nil
         }
         .scrollIndicators(.never)
         .frame(height: 34)
@@ -80,11 +121,66 @@ private struct TabStrip: View {
         }
     }
 
+    /// How far the dragged tab is drawn from the slot the tab order gives it. Other tabs stay put.
+    private func offset(of id: UUID) -> CGFloat {
+        guard let drag, drag.tab == id, let place = model.state.tabs.firstIndex(of: id) else { return 0 }
+        return CGFloat(drag.offsetFromSlot(place: place))
+    }
+
+    /// The pointer moved with the left button held on a tab, past the click threshold.
+    /// The first call starts the drag. Each new place goes to the model right away.
+    private func dragged(_ id: UUID, pressX: Double, pointerX: Double) {
+        var current =
+            drag ?? TabDrag(tab: id, tabs: model.state.tabs, widths: widths, pressX: pressX, viewport: viewport)
+        guard current?.tab == id, let place = current?.follow(pointerX: pointerX, in: viewport) else { return }
+        drag = current
+        raisedTab = id
+        model.moveTab(id, to: place)
+    }
+
+    /// The strip scrolled, by itself or by the user. During a drag the tabs moved under the
+    /// dragged tab, so it may take a new place.
+    private func scrolled(to viewport: TabStripViewport) {
+        self.viewport = viewport
+        guard var current = drag else { return }
+        let place = current.scrolled(to: viewport)
+        drag = current
+        model.moveTab(current.tab, to: place)
+    }
+
+    /// Scrolls the strip a little on every frame while the dragged tab is held at a visible edge.
+    /// It ends when the tab leaves the edge, the first or last tab comes into view, or the drag ends.
+    private func scrollAtEdge() async {
+        let clock = ContinuousClock()
+        var last = clock.now
+        while drag?.isScrolling == true {
+            do { try await Task.sleep(for: .milliseconds(16)) } catch { return }
+            let now = clock.now
+            let elapsed = last.duration(to: now) / .seconds(1)
+            last = now
+            guard let step = drag?.scrollStep(elapsed: elapsed), step != 0 else { return }
+            let scrollX = viewport.scrollX + step
+            scrollPosition.scrollTo(x: scrollX)
+            scrolled(to: TabStripViewport(scrollX: scrollX, width: viewport.width))
+        }
+    }
+
+    /// The left button was released: the tab settles into the slot it holds.
+    private func drop() {
+        withAnimation(slide) { drag = nil }
+    }
+
+    /// Esc during a drag: the tab goes back to the place it started. The selection stays.
+    private func cancel() {
+        guard let drag else { return }
+        withAnimation(slide) {
+            model.moveTab(drag.tab, to: drag.startPlace)
+            self.drag = nil
+        }
+    }
+
     private func step(_ delta: Int) {
-        let tabs = model.state.tabs
-        guard !tabs.isEmpty else { return }
-        let current = model.state.selectedCommandID.flatMap(tabs.firstIndex(of:)) ?? 0
-        let next = tabs[(current + delta + tabs.count) % tabs.count]
+        guard let next = model.state.tab(steppingBy: delta) else { return }
         Task { await model.show(command: next) }
     }
 }
@@ -93,8 +189,18 @@ private struct OutputTab: View {
     let command: CommandSnapshot
     let projectName: String
     let isActive: Bool
+    /// False while any tab is dragged: tabs the pointer passes over get no hover highlight.
+    let showsHover: Bool
     let model: WindowModel
+    let onDrag: (_ pressX: Double, _ pointerX: Double) -> Void
+    let onDrop: () -> Void
+    let onCancel: () -> Void
     @State private var isHovering = false
+
+    /// The close button's side, and its gap to the tab's right edge.
+    private static let closeButton = TabPress.CloseButton(side: 16, trailing: 8)
+
+    private var isHighlighted: Bool { isHovering && showsHover }
 
     var body: some View {
         HStack(spacing: 7) {
@@ -111,30 +217,39 @@ private struct OutputTab: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 8.5, weight: .bold))
-                    .frame(width: 16, height: 16)
+                    .frame(width: CGFloat(Self.closeButton.side), height: CGFloat(Self.closeButton.side))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(Graphite.tertiary)
-            .opacity(isActive || isHovering ? 1 : 0)
+            .opacity(isActive || isHighlighted ? 1 : 0)
             .help("Close Tab")
             .accessibilityLabel("Close \(command.settings.name)")
         }
         .padding(.leading, 14)
-        .padding(.trailing, 8)
+        .padding(.trailing, CGFloat(Self.closeButton.trailing))
         .frame(minWidth: 150, maxHeight: .infinity)
-        .background(isActive ? Graphite.canvas : isHovering ? Graphite.hover.opacity(0.5) : .clear)
+        .background(isActive ? Graphite.canvas : isHighlighted ? Graphite.hover.opacity(0.5) : .clear)
+        // The strip's own colour, so a dragged tab hides the tabs it passes over.
+        .background(Graphite.chrome)
         .overlay(alignment: .top) {
             if isActive { Rectangle().fill(Graphite.accent).frame(height: 2) }
         }
         .overlay(alignment: .trailing) { Rectangle().fill(Graphite.line).frame(width: 1) }
         .contentShape(Rectangle())
-        .onTapGesture { Task { await model.show(command: command.id) } }
-        .onMiddleClick { Task { await model.closeTab(command.id) } }
+        // A click selects, a sideways drag moves the tab, a middle click closes it. The close button
+        // keeps its own clicks.
+        .onTabPointer(
+            closeButton: Self.closeButton,
+            onClick: { Task { await model.show(command: command.id) } },
+            onClose: { Task { await model.closeTab(command.id) } },
+            onDrag: onDrag, onDrop: onDrop, onCancel: onCancel
+        )
         .onHover { isHovering = $0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(command.settings.name) in \(projectName), \(command.statusText)")
         .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { Task { await model.show(command: command.id) } }
     }
 }
 

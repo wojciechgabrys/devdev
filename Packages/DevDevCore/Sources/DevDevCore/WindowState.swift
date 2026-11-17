@@ -231,11 +231,30 @@ public struct WindowState: Sendable, Equatable {
         }
     }
 
+    /// Moves a tab to a place counted from the left, starting at 0. The tabs between slide over by one.
+    /// A place outside the list means the first or the last place. An unknown tab changes nothing.
+    /// Only the order changes: the selection stays as it is.
+    public mutating func moveTab(_ id: UUID, to index: Int) {
+        guard let from = tabs.firstIndex(of: id) else { return }
+        let place = min(max(index, 0), tabs.count - 1)
+        guard place != from else { return }
+        tabs.remove(at: from)
+        tabs.insert(id, at: place)
+    }
+
     /// The tab Cmd-1 to Cmd-9 show, counting from the left. Cmd-0 (number 0) shows the last tab.
     /// Nil when there is no tab with that number.
     public func tab(number: Int) -> UUID? {
         if number == 0 { return tabs.last }
         return tabs.indices.contains(number - 1) ? tabs[number - 1] : nil
+    }
+
+    /// The tab Cmd-Shift-] (`delta` 1) and Cmd-Shift-[ (`delta` -1) show: the neighbour of the
+    /// selected tab in the order shown, wrapping at the ends. Nil when no tab is open.
+    public func tab(steppingBy delta: Int) -> UUID? {
+        guard !tabs.isEmpty else { return nil }
+        let current = selectedCommandID.flatMap(tabs.firstIndex(of:)) ?? 0
+        return tabs[((current + delta) % tabs.count + tabs.count) % tabs.count]
     }
 
     /// What Cmd-W closes.

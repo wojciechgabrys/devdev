@@ -252,6 +252,33 @@ final class HelperStandIn: @unchecked Sendable {
         }
     }
 
+    @Test func movingATabReordersTheTabsInTheWindowAndSendsNothingToTheHelper() async throws {
+        try await withStandIn { helper in
+            let (model, first) = try await modelWithCommand(helper, "true")
+            let projectID = try #require(model.state.selectedProject?.id)
+            var draft = CommandDraft()
+            draft.name = "Second"
+            draft.commandLine = "true"
+            let added = await model.addCommand(to: projectID, draft: draft)
+            #expect(added)
+            try await waitUntil("both Commands show") { model.state.selectedProject?.commands.count == 2 }
+            let second = try #require(model.state.selectedProject?.commands.last?.id)
+            await model.show(command: second)
+            #expect(model.state.tabs == [first, second])
+            let selected = model.state.selectedCommandID
+
+            model.moveTab(second, to: 0)
+
+            #expect(model.state.tabs == [second, first])
+            #expect(model.state.selectedCommandID == selected)
+            // The Helper's own order of Commands is untouched: a second window still sees the old one.
+            let other = helper.makeModel()
+            await other.connect()
+            #expect(other.state.projects.first?.commands.map(\.id) == [first, second])
+            #expect(model.state.selectedProject?.commands.map(\.id) == [first, second])
+        }
+    }
+
     @Test func theOutputOfTheSelectedCommandIsReplayedThenStreamedAndTheViewSizeReachesTheHelper() async throws {
         try await withStandIn { helper in
             let line = "echo early; while [ ! -f go ]; do sleep 0.05; done; stty size; \(Script.runsForever)"

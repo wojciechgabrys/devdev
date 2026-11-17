@@ -9,3 +9,4 @@ title: "Features"
 
 - [Build devdev macOS app from spec](DVDV-1-build-devdev-macos-app-from-spec.md): devdev, a native macOS app that starts, stops and watches a web project's dev servers from a main window, a menubar panel and an MCP server, with a background Helper that owns every Process.
 - [Fix menubar menu rendering too low](DVDV-2-fix-menubar-menu-rendering-too-low.md): Fixed the menubar panel opening about 217 points below the Helper's menubar icon, so it now hangs right under the icon.
+- [Reorder tabs by dragging, updating tab shortcuts](DVDV-4-reorder-tabs-by-dragging-updating-tab-sh.md): The user can drag an output tab left or right in the main window's tab strip to change the tab order, and the tab shortcuts follow the new order.

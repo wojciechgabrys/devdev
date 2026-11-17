@@ -222,3 +222,64 @@ Install first with `scripts/install.sh`. Use a Project named `shop` with three C
 - [ ] **`devdev mcp` starts the Helper when it is not running.**
   1. In the menubar panel, choose Stop All and Quit.
   2. In Claude Code, ask again to list the devdev Projects. The answer comes within a few seconds and the menubar icon is back.
+
+## Reorder tabs by dragging
+
+Open at least three Commands so the tab strip shows three tabs, here called A, B and C from the left. Select B.
+
+- [ ] **A dragged tab follows the pointer and its neighbours slide aside live.**
+  1. Hold the left button on A and move right. A follows the pointer and draws above the other tabs. It does not move up or down.
+  2. When A's centre passes the middle of B, B slides left into the place A left, with a short animation.
+  3. Keep the button held and press <kbd>Cmd</kbd> + <kbd>1</kbd>. B's output shows, since B is now the first tab.
+  4. Move the pointer above and below the strip, then far past the strip's right end. A stays in the strip's row and stops at the last tab's place.
+  5. While dragging, the tabs the pointer passes over get no hover highlight.
+  6. Release. A settles into its slot. The order is B, C, A. Press <kbd>Cmd</kbd> + <kbd>0</kbd>: A's output shows.
+- [ ] **The selection and the output stay the same during a drag and after the drop.**
+  1. Select B. Drag A to the right end and drop it. B is still selected and its output is still shown.
+  2. Drag the selected tab B to another place and drop it. B keeps its selected look the whole time and its output stays.
+- [ ] **A press below the threshold is a plain click.**
+  1. Press the left button on a tab that is not selected, move 2 or 3 points sideways and release. The tab is selected and the order is unchanged.
+  2. Drag a tab a little way, not past a neighbour's middle, and release. It slides back. The order and the selection are unchanged.
+- [ ] **The x button closes and never starts a drag.**
+  1. Press the left button on a tab's x, move sideways and release outside the x. No tab moves.
+  2. Click a tab's x. The tab closes.
+- [ ] **Middle and right buttons never start a drag.**
+  1. Hold the middle button on a tab and move sideways. No tab moves. Middle click a tab: it closes.
+  2. Hold the right button on a tab and move sideways. No tab moves.
+- [ ] **A release outside the window drops the tab.**
+  1. Drag a tab past a neighbour, move the pointer out of the window and release there. The tab settles in its new place.
+  2. Move the pointer back over the strip without a button held. No tab follows it.
+- [ ] **Holding a dragged tab at an edge scrolls the strip.**
+  1. Open more tabs than fit in the strip, or make the window narrow until some tabs are out of view. Scroll the strip to its left end.
+  2. Drag the first tab to the right edge of the visible strip and hold it there, with the pointer a little past the edge. The strip scrolls right by itself. The dragged tab stays in view at the edge and the other tabs pass under it.
+  3. Keep holding. The scrolling stops when the last tab is in view. Push the pointer further past the edge: the scrolling is faster.
+  4. Release. The tab settles in the last place, which was out of view at the start. Press <kbd>Cmd</kbd> + <kbd>0</kbd>: its output shows.
+  5. Drag that tab to the left edge and hold it. The strip scrolls left and stops at the first tab. Move the tab back inside the strip while it scrolls: the scrolling stops at once.
+  6. Hold a tab at an edge until the strip has scrolled, then press <kbd>Esc</kbd>. The scrolling stops. The order is the same as before the drag. Scroll back: the tab is at the place it started.
+  7. Hold a tab at an edge and release while the strip scrolls. The scrolling stops at once. The same holds after <kbd>Cmd</kbd> + <kbd>Tab</kbd> to another app.
+  8. Drag a tab that is partly out of view at an edge. It comes fully into view and the strip does not scroll until the tab is pushed past the edge.
+  9. With all tabs in view, drag a tab to each end of the strip and hold it there. Nothing scrolls.
+- [ ] **Esc during a drag puts the tab back.**
+  1. With the order A, B, C and B selected, drag A past B and C and keep the button held. Press <kbd>Esc</kbd>. A slides back to the first place. The order is A, B, C again.
+  2. B is still selected and its output is still shown.
+  3. Keep the button held and move the pointer. No tab follows it. Release over C. C is not selected and no tab moves.
+  4. Drag A again and drop it. The drag works as before.
+  5. Open a sheet, such as Edit Command, then close it. With no drag going on, <kbd>Esc</kbd> still closes sheets and the Go to Command field as before.
+- [ ] **A tab that goes away during a drag ends the drag quietly.**
+  1. Select A. Drag A past B and hold it. Press <kbd>Cmd</kbd> + <kbd>W</kbd>. A disappears. B and C keep the order shown at that moment. No alert appears.
+  2. Release the button. No tab moves and the release selects nothing.
+  3. Drag B past C and drop it. The drag works.
+  4. A Command deleted or a Project removed during a drag takes the same path. One pointer cannot hold a drag and click Delete, so unit tests cover that part. With a second pointing device: hold a drag of A with one, delete A's Command with the other. A disappears, no alert appears and the next drag works.
+- [ ] **Losing focus during a drag drops the tab.**
+  1. Drag A past B and hold it. Press <kbd>Cmd</kbd> + <kbd>Tab</kbd> to switch to another app. A settles in its new place. The order is B, A, C.
+  2. Release the button and come back to DevDev. The order is still B, A, C and the selection is unchanged. Moving the pointer moves no tab.
+  3. Drag A past C and hold it. Press <kbd>Cmd</kbd> + <kbd>W</kbd> until the window closes, or close it another way. Reopen the window. The tabs that are left keep the order shown when it closed, and a new drag works.
+- [ ] **A tab drag never moves the window.**
+  1. Note where the window is. Drag a tab left, right, up and down. The window stays where it was.
+- [ ] **With Reduce Motion on, the neighbours jump.**
+  1. Turn on System Settings > Accessibility > Motion > Reduce Motion. Drag a tab past a neighbour. The neighbour jumps to its new place with no slide, and the dropped tab jumps into its slot.
+- [ ] **One tab alone cannot move.**
+  1. Close all tabs but one. Drag it sideways. It stays where it is and nothing else changes.
+- [ ] **Tabs still work as before.**
+  1. Move the pointer over a tab that is not selected. It gets the hover highlight and its x appears.
+  2. With VoiceOver on, move to a tab. It reads the Command's name, its Project and its status, as a button. <kbd>Ctrl</kbd> + <kbd>Option</kbd> + <kbd>Space</kbd> selects it.

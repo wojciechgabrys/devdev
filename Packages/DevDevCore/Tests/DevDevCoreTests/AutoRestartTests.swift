@@ -56,21 +56,31 @@ import Testing
         }
     }
 
+    /// The times come from the Process itself, not from when a subscriber got the events: under load
+    /// the crash event can arrive late and make the wait look shorter than it was.
     @Test func autoRestartWaitsTheDelayAfterTheCrash() async throws {
         try await withHarness([queue("true")], timings: Self.timings) { h in
+            let times = h.folder.appendingPathComponent("times")
+            let stamp = "/usr/bin/perl -MTime::HiRes=time -e 'printf \"%.6f\\n\", time' >> '\(times.path)'"
+            // Each run writes its start time, then lives 0.2 seconds, then crashes.
             try await h.engine.updateCommand(
-                h.first, settings: queue(countingScript(h, then: "sleep 0.2; exit 1")))
+                h.first, settings: queue(countingScript(h, then: "\(stamp); sleep 0.2; exit 1")))
             let log = await EventLog.listening(to: h.engine)
             try await h.engine.start(h.first, origin: .user)
-            try await waitUntil("the Command started again") { runs(h) >= 2 }
+            func starts() -> [Double] {
+                let text = (try? String(contentsOf: times, encoding: .utf8)) ?? ""
+                return text.split(separator: "\n").compactMap { Double($0) }
+            }
+            try await waitUntil("the Command started again") { starts().count >= 2 }
 
             let changes = await log.statusChanges
             let crash = try #require(changes.firstIndex { $0.cause == .crashed })
             let again = try #require(changes[crash...].firstIndex { $0.command.status == .running })
             #expect(changes[again].origin == .autoRestart)
-            let crashedAt = try #require(await log.receivedAt(crash))
-            let startedAt = try #require(await log.receivedAt(again))
-            #expect(crashedAt.duration(to: startedAt) >= Self.delay - .milliseconds(50))
+            // The second run can start no sooner than the first run's 0.2 seconds plus the delay.
+            let delay = Double(Self.delay.components.seconds) + Double(Self.delay.components.attoseconds) / 1e18
+            let recorded = starts()
+            #expect(recorded[1] - recorded[0] >= 0.2 + delay)
         }
     }
 

@@ -111,8 +111,14 @@ import Testing
 
     @Test func theManualChecklistChecksTheSortedOrderInsteadOfAskingToReorderCommands() throws {
         let checklist = try read("docs/manual-checklist.md")
+        // Tabs are still reordered by hand, by dragging. That section is about tabs, not Commands, so it is left out.
+        var inTabs = false
+        let aboutCommands = checklist.components(separatedBy: "\n").filter { line in
+            if line.hasPrefix("## ") { inTabs = line == "## Reorder tabs by dragging" }
+            return !inTabs
+        }.joined(separator: "\n")
         for word in handOrderingWords {
-            #expect(checklist.range(of: word, options: .caseInsensitive) == nil,
+            #expect(aboutCommands.range(of: word, options: .caseInsensitive) == nil,
                     "docs/manual-checklist.md still says \"\(word)\"")
         }
 

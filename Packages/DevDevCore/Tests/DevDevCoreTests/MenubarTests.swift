@@ -126,4 +126,30 @@ import Testing
             try await waitUntil("the icon is hidden") { !model.showsIcon }
         }
     }
+
+    @Test func thePanelShowsProjectsAndCommandsInTheHelpersSortedOrderAndFollowsARowThatMoves() async throws {
+        let added = ["worker 10", "Build", "api", "worker 2"].map { CommandSettings(name: $0, commandLine: "true") }
+        try await withHarness(added) { h in
+            let admin = h.folder.appendingPathComponent("admin", isDirectory: true)
+            try FileManager.default.createDirectory(at: admin, withIntermediateDirectories: true)
+            _ = try await h.engine.addProject(folder: admin.path, name: "Admin")
+            let model = MenubarModel(engine: h.engine)
+            await model.start()
+
+            // The harness Project is named "project".
+            #expect(model.panel.rows.map(\.name) == ["Admin", "project"])
+            #expect(model.panel.rows[1].commands.map(\.name) == ["api", "Build", "worker 2", "worker 10"])
+
+            var renamed = added[2]
+            renamed.name = "zebra"
+            _ = try await h.engine.updateCommand(h.commandIDs[2], settings: renamed)
+            _ = try await h.engine.renameProject(h.projectID, name: "aardvark")
+
+            try await waitUntil("the panel shows the moved rows") {
+                model.panel.rows.map(\.name) == ["aardvark", "Admin"]
+            }
+            #expect(model.panel.rows[0].commands.map(\.name) == ["Build", "worker 2", "worker 10", "zebra"])
+            #expect(model.panel.rows[0].commands[3].id == h.commandIDs[2])
+        }
+    }
 }

@@ -567,4 +567,78 @@ final class HelperStandIn: @unchecked Sendable {
             #expect(after.map(\.madeByDiscovery) == [true, true, false, true])
         }
     }
+
+    // MARK: - The Helper's order
+
+    private func add(_ name: String, to projectID: UUID, in model: WindowModel) async {
+        var draft = CommandDraft()
+        draft.name = name
+        draft.commandLine = "true"
+        let added = await model.addCommand(to: projectID, draft: draft)
+        #expect(added)
+    }
+
+    @Test func theProjectTreeAndGoToCommandShowProjectsAndCommandsInTheHelpersSortedOrder() async throws {
+        try await withStandIn { helper in
+            let blog = helper.root.appendingPathComponent("blog", isDirectory: true)
+            try FileManager.default.createDirectory(at: blog, withIntermediateDirectories: true)
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+            let shopID = try #require(model.state.selectedProject?.id)
+            for name in ["worker 10", "Build", "api", "worker 2"] {
+                await add(name, to: shopID, in: model)
+            }
+            await model.addProject(folder: blog)
+            let blogID = try #require(model.state.selectedProject?.id)
+            for name in ["vite", "Queue"] {
+                await add(name, to: blogID, in: model)
+            }
+            try await waitUntil("every Command shows") {
+                model.state.projects.map(\.commands.count) == [2, 4]
+            }
+
+            #expect(model.state.projects.map(\.name) == ["blog", "shop"])
+            #expect(model.state.projects[0].commands.map(\.settings.name) == ["Queue", "vite"])
+            #expect(model.state.projects[1].commands.map(\.settings.name) == ["api", "Build", "worker 2", "worker 10"])
+
+            let everyCommand = CommandSearch.results(for: "", in: model.state.snapshot)
+            #expect(everyCommand.map(\.commandName) == ["Queue", "vite", "api", "Build", "worker 2", "worker 10"])
+            let workers = CommandSearch.results(for: "worker", in: model.state.snapshot)
+            #expect(workers.map(\.commandName) == ["worker 2", "worker 10"])
+        }
+    }
+
+    @Test func renamingTheSelectedCommandSoItsRowMovesKeepsItSelectedAndItsTabInPlace() async throws {
+        try await withStandIn { helper in
+            let (model, main) = try await modelWithCommand(helper, "true")
+            let projectID = try #require(model.state.selectedProject?.id)
+            await add("Alpha", to: projectID, in: model)
+            await add("Zulu", to: projectID, in: model)
+            try await waitUntil("the three Commands show") {
+                model.state.selectedProject?.commands.map(\.settings.name) == ["Alpha", "Main", "Zulu"]
+            }
+            let commands = try #require(model.state.selectedProject?.commands)
+            let (alpha, zulu) = (commands[0].id, commands[2].id)
+            // Open the three tabs in a known order, with the Command to rename in the middle and selected.
+            for id in model.state.tabs { await model.closeTab(id) }
+            for id in [main, alpha, zulu, alpha] { await model.select(command: id) }
+            #expect(model.state.tabs == [main, alpha, zulu])
+            #expect(model.state.selectedCommandID == alpha)
+
+            var draft = CommandDraft(try #require(model.state.selectedCommand).settings)
+            draft.name = "Zz"
+            let renamed = await model.updateCommand(alpha, draft: draft)
+            #expect(renamed)
+            try await waitUntil("the row moved to the end") {
+                model.state.selectedProject?.commands.map(\.id) == [main, zulu, alpha]
+            }
+
+            #expect(model.state.selectedProject?.commands.map(\.settings.name) == ["Main", "Zulu", "Zz"])
+            #expect(model.state.selectedCommandID == alpha)
+            #expect(model.state.selectedCommand?.settings.name == "Zz")
+            #expect(model.state.tabs == [main, alpha, zulu])
+            #expect(model.state.tab(number: 2) == alpha)
+        }
+    }
 }

@@ -342,4 +342,35 @@ import Testing
             #expect(result.text.hasPrefix("There is no tool named 'delete_project'."))
         }
     }
+
+    // MARK: - The Helper's order
+
+    @Test func listProjectsAndGetProjectShowProjectsAndCommandsInTheHelpersSortedOrder() async throws {
+        let added = ["worker 10", "Build", "api", "worker 2"].map { CommandSettings(name: $0, commandLine: "true") }
+        try await withTools(added) { h, tools in
+            var folders: [String: String] = ["Shop": h.projectFolder.path]
+            for name in ["web 10", "Admin", "web 2"] {
+                let folder = h.folder.appendingPathComponent(name, isDirectory: true)
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                folders[name] = try await h.engine.addProject(folder: folder.path, name: name).folder
+            }
+
+            let list = await tools.call("list_projects", arguments: [:])
+            expectSuccess(list)
+            #expect(
+                list.text.split(separator: "\n").map(String.init)
+                    == ["Admin", "Shop", "web 2", "web 10"].map { "\($0): Stopped, folder \(folders[$0] ?? "")" })
+
+            let project = await tools.call("get_project", arguments: [:])
+            expectSuccess(project)
+            #expect(
+                project.text.split(separator: "\n").map(String.init) == [
+                    "Shop: Stopped, folder \(h.projectFolder.path)",
+                    "- api: Stopped, never started",
+                    "- Build: Stopped, never started",
+                    "- worker 2: Stopped, never started",
+                    "- worker 10: Stopped, never started",
+                ])
+        }
+    }
 }

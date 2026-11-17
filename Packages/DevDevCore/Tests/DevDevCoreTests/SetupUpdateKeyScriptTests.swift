@@ -239,6 +239,89 @@ import Testing
         #expect(sandbox.strayCopiesOfThePrivateKey().isEmpty)
     }
 
+    // MARK: - The run waits for the user's key
+
+    private static let plistPath = "Config/App-Info.plist"
+
+    private static func git(_ arguments: [String]) throws -> (status: Int32, output: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.arguments = ["-C", root.path] + arguments
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return (process.terminationStatus, String(decoding: data, as: UTF8.self))
+    }
+
+    /// The oldest commit a `git log` with these arguments lists.
+    private static func oldestCommit(_ arguments: String...) throws -> String {
+        let log = try git(["log", "--format=%H"] + arguments)
+        return try #require(log.output.split(separator: "\n").last.map(String.init), "git log \(arguments) found no commit")
+    }
+
+    @Test func theKeyScriptOnlyPrintsThePublicKeyAndLeavesWritingItIntoTheInfoPlistToTheNextStep() throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.remove() }
+        let plist = Self.root.appendingPathComponent(Self.plistPath)
+        let before = try Data(contentsOf: plist)
+
+        let result = try sandbox.runScript()
+
+        #expect(result.status == 0, "\(result.output)")
+        // The script hands the key to the person who ran it. It does not edit the repo.
+        #expect(try Data(contentsOf: plist) == before)
+        #expect(result.output.contains("What happens next:"))
+        #expect(result.output.contains("This public key goes into Config/App-Info.plist as SUPublicEDKey."))
+        // No script and no workflow step writes the key either, so it gets there only after this run.
+        for file in ["scripts/setup-update-key.sh", "scripts/make-appcast.sh", "scripts/install.sh", "scripts/make-dmg.sh", ".github/workflows/release.yml"] {
+            let text = try String(contentsOf: Self.root.appendingPathComponent(file), encoding: .utf8)
+            #expect(!text.contains("PlistBuddy -c \"Set"), "\(file) sets an Info.plist key")
+            #expect(!text.contains("PlistBuddy -c \"Add"), "\(file) adds an Info.plist key")
+            #expect(!text.contains("plutil -replace"), "\(file) replaces an Info.plist key")
+            #expect(!text.contains("plutil -insert"), "\(file) inserts an Info.plist key")
+            #expect(!text.contains("defaults write"), "\(file) writes an Info.plist key")
+        }
+    }
+
+    @Test func thePublicKeyInTheInfoPlistIsNoStandInAndWasWrittenAfterEverythingThatNeedsNoKey() throws {
+        let data = try Data(contentsOf: Self.root.appendingPathComponent(Self.plistPath))
+        let parsed = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        let key = try #require(parsed?["SUPublicEDKey"] as? String)
+
+        // Not a made-up value: not this suite's fake key, not one repeated character, not all zero bytes.
+        #expect(key != Self.publicKey)
+        let bytes = try #require(Data(base64Encoded: key))
+        #expect(Set(bytes).count > 8, "the key looks like a placeholder")
+        #expect(Set(key.dropLast()).count > 8, "the key looks like a placeholder")
+
+        // The plist never held any other key: the first commit that put SUPublicEDKey there is the only one.
+        // Without history, as in an exported copy of the sources, the checks above are all there is.
+        guard FileManager.default.fileExists(atPath: Self.root.appendingPathComponent(".git").path) else { return }
+        let touched = try Self.git(["log", "--format=%H", "-SSUPublicEDKey", "--", Self.plistPath]).output
+            .split(separator: "\n")
+        #expect(touched.count == 1, "SUPublicEDKey was added to the plist, then removed or added again")
+        let valueChanged = try Self.git(["log", "--format=%H", "-S\(key)", "--", Self.plistPath]).output
+            .split(separator: "\n")
+        #expect(valueChanged == touched, "the plist held a different SUPublicEDKey before the real one")
+
+        // The run built everything that needs no real key first, the key script among it, and wrote
+        // the key last. The same commit passes too: a squash merge puts the feature in one commit.
+        let keyWritten = try Self.oldestCommit("-SSUPublicEDKey", "--", Self.plistPath)
+        let builtWithoutTheKey = [
+            "scripts/setup-update-key.sh", "scripts/make-appcast.sh", "scripts/verify-update-signature.swift",
+            "App/AppUpdater.swift", "Packages/DevDevCore/Sources/DevDevCore/UpdatesSection.swift",
+        ]
+        for path in builtWithoutTheKey {
+            let added = try Self.oldestCommit("--diff-filter=A", "--", path)
+            #expect(
+                try Self.git(["merge-base", "--is-ancestor", added, keyWritten]).status == 0,
+                "the public key was written before \(path) existed")
+        }
+    }
+
     @Test func theKeyScriptPassesBashSyntaxCheck() throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")

@@ -7,6 +7,8 @@ title: "Slices"
 
 # Slices
 
+- [Appcast script with a throwaway-key test](DVDV-3-5-appcast-script-with-a-throwaway-key-test.md): Slice #5 of "Add Sparkle updater with GitHub-hosted appcast".
+- [Build number equals the version](DVDV-3-2-build-number-equals-the-version.md): Slice #2 of "Add Sparkle updater with GitHub-hosted appcast".
 - [Close-out: manual checklist, final verification and final report](DVDV-1-9-close-out-manual-checklist-final-verification-and-final-re.md): Slice #9 of "Build devdev macOS app from spec".
 - [Drag a tab in the strip: start, follow, live reorder, drop](DVDV-4-3-drag-a-tab-in-the-strip-start-follow-live-reorder-drop.md): Slice #3 of "Reorder tabs by dragging, updating tab shortcuts".
 - [Drag geometry rule in DevDevCore](DVDV-4-2-drag-geometry-rule-in-devdevcore.md): Slice #2 of "Reorder tabs by dragging, updating tab shortcuts".
@@ -14,6 +16,8 @@ title: "Slices"
 - [Move a tab in WindowState and WindowModel](DVDV-4-1-move-a-tab-in-windowstate-and-windowmodel.md): Slice #1 of "Reorder tabs by dragging, updating tab shortcuts".
 - [Docs: sorted order replaces reordering](DVDV-5-4-docs-sorted-order-replaces-reordering.md): Slice #4 of "Sort commands in a folder alphabetically".
 - [Helper keeps Projects and Commands sorted by name](DVDV-5-2-helper-keeps-projects-and-commands-sorted-by-name.md): Slice #2 of "Sort commands in a folder alphabetically".
+- [Docs: README, spec and the Updates manual checklist](DVDV-3-8-docs-readme-spec-and-the-updates-manual-checklist.md): Slice #8 of "Add Sparkle updater with GitHub-hosted appcast".
+- [Key setup script](DVDV-3-6-key-setup-script.md): Slice #6 of "Add Sparkle updater with GitHub-hosted appcast".
 - [Phase 1: core package, Helper target and socket protocol](DVDV-1-2-phase-1-core-package-helper-target-and-socket-protocol.md): Slice #2 of "Build devdev macOS app from spec".
 - [Phase 2: main window, SwiftTerm output and install script](DVDV-1-3-phase-2-main-window-swiftterm-output-and-install-script.md): Slice #3 of "Build devdev macOS app from spec".
 - [Phase 3: menubar panel, crash badge, icon and launch-at-login settings](DVDV-1-4-phase-3-menubar-panel-crash-badge-icon-and-launch-at-login.md): Slice #4 of "Build devdev macOS app from spec".
@@ -24,4 +28,9 @@ title: "Slices"
 - [Scroll the strip by itself at the edges during a drag](DVDV-4-5-scroll-the-strip-by-itself-at-the-edges-during-a-drag.md): Slice #5 of "Reorder tabs by dragging, updating tab shortcuts".
 - [Readers follow the Helper's order; selection and tabs survive a move](DVDV-5-3-readers-follow-the-helpers-order-selection-and-tabs-surviv.md): Slice #3 of "Sort commands in a folder alphabetically".
 - [Remove Move Up and Move Down](DVDV-5-1-remove-move-up-and-move-down.md): Slice #1 of "Sort commands in a folder alphabetically".
+- [Release workflow signs the DMG and publishes the appcast](DVDV-3-7-release-workflow-signs-the-dmg-and-publishes-the-appcast.md): Slice #7 of "Add Sparkle updater with GitHub-hosted appcast".
+- [Sparkle updater in the App with Check for Updates…](DVDV-3-3-sparkle-updater-in-the-app-with-check-for-updates.md): Slice #3 of "Add Sparkle updater with GitHub-hosted appcast".
+- [Spike: Sparkle with an ad hoc signed update](DVDV-3-1-spike-sparkle-with-an-ad-hoc-signed-update.md): Slice #1 of "Add Sparkle updater with GitHub-hosted appcast".
 - [Spikes: verify the five section 11 items and save dev:list fixtures](DVDV-1-1-spikes-verify-the-five-section-11-items-and-save-devlist-f.md): Slice #1 of "Build devdev macOS app from spec".
+- [Updates section in Settings](DVDV-3-4-updates-section-in-settings.md): Slice #4 of "Add Sparkle updater with GitHub-hosted appcast".
+- [Write the real public key and run the full checks](DVDV-3-9-write-the-real-public-key-and-run-the-full-checks.md): Slice #9 of "Add Sparkle updater with GitHub-hosted appcast".

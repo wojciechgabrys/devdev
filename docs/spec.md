@@ -209,7 +209,7 @@ Modelled on F-Bar: a list you expand, in the Graphite look. A filter field at th
 
 - Each Project is a row with name, status indicator, and Start All / Restart All / Stop All.
 - Expanding a Project shows its Commands, each with status, how long it has run or how it ended, and Start / Restart / Stop on hover.
-- At the bottom: **Open DevDev** (launches or focuses the App), **Stop All and Quit**.
+- At the top, above the filter: **Open DevDev** (launches or focuses the App). At the bottom: **Stop All and Quit**.
 - No output in the panel. Clicking a Command's name opens the App on that Command's output.
 - The menubar icon shows a badge while any Command is Crashed.
 - The icon stays after the App quits, for as long as the Helper runs.

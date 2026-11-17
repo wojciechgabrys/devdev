@@ -1,7 +1,7 @@
 import DevDevCore
 import SwiftUI
 
-/// The panel under the menubar icon, in the Graphite look: a filter field, then each Project with its
+/// The panel under the menubar icon, in the Graphite look: Open DevDev, a filter field, then each Project with its
 /// Commands. No output. Rows, statuses, filtering and which buttons work come from `MenubarPanel`.
 struct MenubarPanelView: View {
     let model: MenubarModel
@@ -14,6 +14,13 @@ struct MenubarPanelView: View {
     var body: some View {
         let panel = model.panel.filtered(by: filter)
         VStack(alignment: .leading, spacing: 0) {
+            FooterItem(title: "Open DevDev", shortcut: "⌘O") {
+                close()
+                opener.openApp()
+            }
+            .keyboardShortcut("o", modifiers: .command)
+            .padding(6)
+            Rectangle().fill(Graphite.line).frame(height: 1)
             filterField
             if model.panel.rows.isEmpty {
                 Text("No Projects yet. Add one in DevDev.")
@@ -51,11 +58,6 @@ struct MenubarPanelView: View {
             }
             Rectangle().fill(Graphite.line).frame(height: 1)
             VStack(spacing: 1) {
-                FooterItem(title: "Open DevDev", shortcut: "⌘O") {
-                    close()
-                    opener.openApp()
-                }
-                .keyboardShortcut("o", modifiers: .command)
                 FooterItem(title: "Stop All and Quit", shortcut: "⌥⌘Q") {
                     close()
                     Task { await model.stopAllAndQuit() }

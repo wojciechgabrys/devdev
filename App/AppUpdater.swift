@@ -16,20 +16,33 @@ final class AppUpdater {
     /// False while Sparkle cannot start a check: it failed to start, or a check is already running.
     private(set) var canCheckForUpdates = false
 
-    private let controller: SPUStandardUpdaterController
-    private var observation: NSKeyValueObservation?
+    /// Sparkle's own stored preference for the daily check. Settings shows it; the Helper never stores it.
+    private(set) var automaticallyChecksForUpdates = false
 
-    /// Sparkle's updater, for the settings it stores itself.
-    var updater: SPUUpdater { controller.updater }
+    private let controller: SPUStandardUpdaterController
+    private var observations: [NSKeyValueObservation] = []
 
     private init() {
         controller = SPUStandardUpdaterController(
             startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
         canCheckForUpdates = controller.updater.canCheckForUpdates
-        observation = controller.updater.observe(\.canCheckForUpdates, options: [.new]) { [weak self] _, change in
-            guard let value = change.newValue else { return }
-            Task { @MainActor in self?.canCheckForUpdates = value }
-        }
+        automaticallyChecksForUpdates = controller.updater.automaticallyChecksForUpdates
+        observations = [
+            controller.updater.observe(\.canCheckForUpdates, options: [.new]) { [weak self] _, change in
+                guard let value = change.newValue else { return }
+                Task { @MainActor in self?.canCheckForUpdates = value }
+            },
+            controller.updater.observe(\.automaticallyChecksForUpdates, options: [.new]) { [weak self] _, change in
+                guard let value = change.newValue else { return }
+                Task { @MainActor in self?.automaticallyChecksForUpdates = value }
+            },
+        ]
+    }
+
+    /// Turns the daily check on or off. Sparkle stores the choice in the App's own defaults.
+    func setAutomaticallyChecksForUpdates(_ on: Bool) {
+        controller.updater.automaticallyChecksForUpdates = on
+        automaticallyChecksForUpdates = on
     }
 
     /// Asks Sparkle to check now and show its standard window.

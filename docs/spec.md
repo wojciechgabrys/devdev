@@ -155,6 +155,10 @@ Discovery reads a Project's folder and proposes Commands. It runs when a Project
 
 It always ends in a checklist the user confirms. Discovery never creates, changes or removes a Command by itself.
 
+### Docker
+
+When the Project folder itself holds `compose.yaml`, `compose.yml`, `docker-compose.yaml`, `docker-compose.yml` or a `Dockerfile`, the checklist asks, above the proposed Commands, whether to run them inside a Docker container. Ticking it reveals a container name field, which Apply then needs. Every Command the checklist adds gets "Run inside a Docker container" on, with that name.
+
 ### Laravel (a `composer.json` that requires `laravel/framework`)
 
 1. **Preferred: `php artisan dev:list`.** Laravel 13.16.0 added `php artisan dev` and `php artisan dev:list`, which lists every registered dev process without starting it — including ones the project registers in a service provider with `DevCommands::register / artisan / node / nodeExec`, and honouring `only`, `except`, `withoutVendorCommands`, `withoutDefaultCommands`. Run it in the Project folder (through the login shell, with a timeout) and propose **one Command per listed process**, named after the process. Never propose the single combined `php artisan dev` — each process must be individually restartable.

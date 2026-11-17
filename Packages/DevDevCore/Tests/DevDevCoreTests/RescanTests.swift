@@ -87,6 +87,36 @@ import Testing
         #expect(checklist.commandsToRemove == [stale.id])
     }
 
+    @Test func withDockerFilesTheChecklistCanPutTheAddedCommandsInAContainer() {
+        let project = Project(name: "shop", folder: "/tmp/shop")
+        let plan = DiscoveryPlan.make(project: project, proposals: [proposal("server", "php artisan serve")])
+
+        #expect(!DiscoveryChecklist(plan: plan, reason: .projectAdded).asksAboutContainer)
+        var checklist = DiscoveryChecklist(plan: plan, reason: .projectAdded, dockerFiles: ["compose.yaml"])
+        #expect(checklist.asksAboutContainer)
+        #expect(checklist.commandsToAdd.map(\.runInContainer) == [false])
+
+        checklist.runInContainer = true
+        #expect(!checklist.canApply)
+        checklist.containerName = " laravel "
+        #expect(checklist.canApply)
+        #expect(checklist.commandsToAdd.map(\.runInContainer) == [true])
+        #expect(checklist.commandsToAdd.map(\.containerName) == ["laravel"])
+    }
+
+    @Test func dockerFilesAreFoundOnlyInTheProjectFolderItself() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(
+            at: folder.appendingPathComponent("docker"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        #expect(Discovery.dockerFiles(in: folder).isEmpty)
+
+        for file in ["Dockerfile", "docker-compose.yml", "docker/compose.yaml"] {
+            try Data().write(to: folder.appendingPathComponent(file))
+        }
+        #expect(Discovery.dockerFiles(in: folder) == ["docker-compose.yml", "Dockerfile"])
+    }
+
     // MARK: - Through the Helper
 
     @Test func discoveryRunsThroughTheHelperAndChangesNothingByItself() async throws {

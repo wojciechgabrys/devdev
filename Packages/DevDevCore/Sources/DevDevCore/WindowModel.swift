@@ -299,7 +299,9 @@ public final class WindowModel {
         defer { discoveringProjectID = nil }
         guard case .discovery(let plan)? = await perform(.discover(projectID: projectID)) else { return }
         if reason == .projectAdded, plan.add.isEmpty { return }
-        discoveryChecklist = DiscoveryChecklist(plan: plan, reason: reason)
+        let folder = state.projects.first { $0.id == projectID }.map { URL(fileURLWithPath: $0.folder) }
+        discoveryChecklist = DiscoveryChecklist(
+            plan: plan, reason: reason, dockerFiles: folder.map(Discovery.dockerFiles(in:)) ?? [])
     }
 
     /// Adds the checked proposals as Discovery-made Commands and deletes the checked removals.

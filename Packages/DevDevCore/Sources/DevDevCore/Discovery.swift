@@ -40,6 +40,18 @@ public enum Discovery {
         return uniquelyNamed(proposals, taken: [])
     }
 
+    /// The Docker files Discovery looks for, in the order the checklist names them.
+    public static let dockerFileNames = [
+        "compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml", "Dockerfile",
+    ]
+
+    /// The Docker files in the folder itself, not in subfolders. Empty when the Project has none.
+    public static func dockerFiles(in folder: URL) -> [String] {
+        dockerFileNames.filter {
+            FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+        }
+    }
+
     /// The fallback when `dev:list` is missing or fails.
     static func fixedLaravelList(_ composer: [String: Any]) -> [DiscoveryProposal] {
         let horizon = requires(composer, "laravel/horizon")
@@ -177,16 +189,39 @@ public struct DiscoveryChecklist: Sendable, Equatable, Identifiable {
     public var addChecked: [Bool]
     /// One per `plan.remove`: checked = remove.
     public var removeChecked: [Bool]
+    /// The Docker files in the Project folder. When there are any, the checklist asks about a container.
+    public var dockerFiles: [String]
+    /// True when the added Commands should run inside `containerName`.
+    public var runInContainer = false
+    public var containerName = ""
 
-    public init(plan: DiscoveryPlan, reason: Reason) {
+    public init(plan: DiscoveryPlan, reason: Reason, dockerFiles: [String] = []) {
         self.plan = plan
         self.reason = reason
+        self.dockerFiles = dockerFiles
         addChecked = plan.add.map(\.checked)
         removeChecked = plan.remove.map { _ in false }
     }
 
+    /// True when the checklist asks whether to run the added Commands in a container.
+    public var asksAboutContainer: Bool { !dockerFiles.isEmpty && !plan.add.isEmpty }
+
+    /// False while the container switch is on and no container is named.
+    public var canApply: Bool {
+        !runInContainer || !containerName.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     public var commandsToAdd: [CommandSettings] {
-        zip(plan.add, addChecked).filter(\.1).map(\.0.settings)
+        let inContainer = runInContainer && asksAboutContainer
+        let name = containerName.trimmingCharacters(in: .whitespaces)
+        return zip(plan.add, addChecked).filter(\.1).map { proposal, _ in
+            var settings = proposal.settings
+            if inContainer {
+                settings.runInContainer = true
+                settings.containerName = name
+            }
+            return settings
+        }
     }
 
     public var commandsToRemove: [UUID] {

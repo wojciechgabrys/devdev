@@ -20,6 +20,23 @@ struct DiscoveryChecklistView: View {
                     .frame(minHeight: 160)
             } else {
                 Form {
+                    if checklist.asksAboutContainer {
+                        Section {
+                            Toggle(isOn: $checklist.runInContainer) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Run these Commands inside a Docker container")
+                                    Text("Found \(checklist.dockerFiles.joined(separator: ", "))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .toggleStyle(.checkbox)
+                            if checklist.runInContainer {
+                                TextField("Container name", text: $checklist.containerName, prompt: Text("app"))
+                                    .font(.system(.body, design: .monospaced))
+                            }
+                        }
+                    }
                     if !checklist.plan.add.isEmpty {
                         Section("Add these Commands") {
                             ForEach(checklist.plan.add.indices, id: \.self) { index in
@@ -57,6 +74,7 @@ struct DiscoveryChecklistView: View {
                     Task { await model.applyDiscovery(confirmed) }
                 }
                 .keyboardShortcut(.defaultAction)
+                .disabled(!checklist.canApply)
             }
             .padding(16)
         }

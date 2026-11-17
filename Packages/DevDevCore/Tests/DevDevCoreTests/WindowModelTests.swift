@@ -464,6 +464,26 @@ final class HelperStandIn: @unchecked Sendable {
         }
     }
 
+    @Test func aNewProjectWithDockerFilesCanRunItsCommandsInAContainer() async throws {
+        try await withStandIn(devList: try FakeDevListRunner(fixture: "default.json")) { helper in
+            try makeLaravelNodeProject(helper)
+            try Data().write(to: helper.projectFolder.appendingPathComponent("compose.yaml"))
+            let model = helper.makeModel()
+            await model.connect()
+            await model.addProject(folder: helper.projectFolder)
+
+            var checklist = try #require(model.discoveryChecklist)
+            #expect(checklist.dockerFiles == ["compose.yaml"])
+            checklist.runInContainer = true
+            checklist.containerName = "laravel"
+            await model.applyDiscovery(checklist)
+
+            try await waitUntil("four Commands show") { model.state.selectedProject?.commands.count == 4 }
+            let commands = try #require(model.state.selectedProject?.commands)
+            #expect(commands.allSatisfy { $0.settings.runInContainer && $0.settings.containerName == "laravel" })
+        }
+    }
+
     @Test func addingAFolderThatIsAlreadyAProjectShowsNoChecklist() async throws {
         let runner = try FakeDevListRunner(fixture: "default.json")
         try await withStandIn(devList: runner) { helper in

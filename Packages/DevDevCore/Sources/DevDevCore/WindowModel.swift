@@ -223,6 +223,12 @@ public final class WindowModel {
         await watchSelectedCommand()
     }
 
+    /// Moves a tab to a place counted from the left, starting at 0. The order lives in the window only,
+    /// so nothing is sent to the Helper.
+    public func moveTab(_ id: UUID, to index: Int) {
+        state.moveTab(id, to: index)
+    }
+
     /// A link from the menubar panel or a notification: shows that Command's output.
     public func open(_ link: OpenLink) async {
         state.open(link)

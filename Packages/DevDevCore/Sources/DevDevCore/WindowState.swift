@@ -231,6 +231,17 @@ public struct WindowState: Sendable, Equatable {
         }
     }
 
+    /// Moves a tab to a place counted from the left, starting at 0. The tabs between slide over by one.
+    /// A place outside the list means the first or the last place. An unknown tab changes nothing.
+    /// Only the order changes: the selection stays as it is.
+    public mutating func moveTab(_ id: UUID, to index: Int) {
+        guard let from = tabs.firstIndex(of: id) else { return }
+        let place = min(max(index, 0), tabs.count - 1)
+        guard place != from else { return }
+        tabs.remove(at: from)
+        tabs.insert(id, at: place)
+    }
+
     /// The tab Cmd-1 to Cmd-9 show, counting from the left. Cmd-0 (number 0) shows the last tab.
     /// Nil when there is no tab with that number.
     public func tab(number: Int) -> UUID? {

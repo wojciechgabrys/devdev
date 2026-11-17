@@ -250,4 +250,144 @@ import Testing
 
         #expect(state.selectedCommandID == vite.id)
     }
+
+    // MARK: - Moving a tab
+
+    /// Commands of one Project, each with a tab, in the order given. The first one is selected.
+    private static func tabs(_ names: [String]) -> (state: WindowState, ids: [UUID]) {
+        let commands = names.map { command($0, .stopped) }
+        var state = connected([project(commands, status: .stopped)])
+        for command in commands { state.select(tab: command.id) }
+        state.select(tab: commands[0].id)
+        return (state, commands.map(\.id))
+    }
+
+    @Test func movingATabLeftPutsItAtThatPlaceAndShiftsTheOthersRight() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(ids[2], to: 1)
+
+        #expect(state.tabs == [ids[0], ids[2], ids[1], ids[3]])
+    }
+
+    @Test func movingATabRightPutsItAtThatPlaceAndShiftsTheOthersLeft() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(ids[0], to: 2)
+
+        #expect(state.tabs == [ids[1], ids[2], ids[0], ids[3]])
+    }
+
+    @Test func aTabCanMoveToTheFirstAndToTheLastPlace() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(ids[2], to: 0)
+        #expect(state.tabs == [ids[2], ids[0], ids[1], ids[3]])
+
+        state.moveTab(ids[0], to: 3)
+        #expect(state.tabs == [ids[2], ids[1], ids[3], ids[0]])
+    }
+
+    @Test func movingATabToItsOwnPlaceLeavesTheTabsUnchanged() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(ids[1], to: 1)
+
+        #expect(state.tabs == ids)
+    }
+
+    @Test func aPlaceOutsideTheListIsClampedToTheFirstOrLastPlace() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(ids[1], to: 99)
+        #expect(state.tabs == [ids[0], ids[2], ids[3], ids[1]])
+
+        state.moveTab(ids[3], to: -5)
+        #expect(state.tabs == [ids[3], ids[0], ids[2], ids[1]])
+
+        state.moveTab(ids[3], to: -1)
+        #expect(state.tabs == [ids[3], ids[0], ids[2], ids[1]])
+    }
+
+    @Test func movingAnUnknownTabDoesNothing() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(UUID(), to: 0)
+
+        #expect(state.tabs == ids)
+        #expect(state.selectedCommandID == ids[0])
+    }
+
+    @Test func movingATabNeverChangesTheSelectionEvenWhenTheSelectedTabMoves() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        #expect(state.selectedCommandID == ids[0])
+        #expect(state.selectedProjectID == Self.projectID)
+
+        state.moveTab(ids[0], to: 3)
+        #expect(state.selectedCommandID == ids[0])
+        #expect(state.selectedProjectID == Self.projectID)
+
+        state.moveTab(ids[2], to: 0)
+        #expect(state.selectedCommandID == ids[0])
+        #expect(state.selectedProjectID == Self.projectID)
+        #expect(state.tabs == [ids[2], ids[1], ids[3], ids[0]])
+    }
+
+    @Test func afterAMoveCommandOneToNineCountFromTheLeftInTheNewOrderAndZeroIsTheLastTab() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"])
+        var state = initial
+
+        state.moveTab(ids[9], to: 0)
+        state.moveTab(ids[4], to: 9)
+
+        let order = [ids[9], ids[0], ids[1], ids[2], ids[3], ids[5], ids[6], ids[7], ids[8], ids[4]]
+        #expect(state.tabs == order)
+        #expect((1...9).map { state.tab(number: $0) } == Array(order[0..<9]))
+        #expect(state.tab(number: 0) == ids[4])
+    }
+
+    @Test func afterAMoveClosingTheSelectedTabSelectsItsRightNeighbourInTheNewOrderElseItsLeft() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        state.moveTab(ids[3], to: 1)
+        #expect(state.tabs == [ids[0], ids[3], ids[1], ids[2]])
+
+        state.closeTab(ids[0])
+        #expect(state.selectedCommandID == ids[3])
+
+        state.moveTab(ids[3], to: 2)
+        #expect(state.tabs == [ids[1], ids[2], ids[3]])
+        state.closeTab(ids[3])
+        #expect(state.selectedCommandID == ids[2])
+        #expect(state.tabs == [ids[1], ids[2]])
+    }
+
+    @Test func afterAMoveCommandWStillClosesTheSelectedTab() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+
+        state.moveTab(ids[0], to: 2)
+        #expect(state.closeTarget == .tab(ids[0]))
+
+        state.moveTab(ids[3], to: 0)
+        #expect(state.closeTarget == .tab(ids[0]))
+    }
+
+    @Test func aTabOpenedAfterAMoveLandsAtTheRightEnd() {
+        let (initial, ids) = Self.tabs(["a", "b", "c", "d"])
+        var state = initial
+        state.closeTab(ids[3])
+        state.moveTab(ids[2], to: 0)
+
+        state.select(tab: ids[3])
+
+        #expect(state.tabs == [ids[2], ids[0], ids[1], ids[3]])
+    }
 }
